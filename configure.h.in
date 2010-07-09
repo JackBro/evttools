@@ -1,0 +1,241 @@
+/**
+ *  @file configure.h.in
+ *  @brief Tries to fix various differences in compilers and libraries.
+ *
+ */
+
+#ifndef CONFIGURE_H_INCLUDED
+#define CONFIGURE_H_INCLUDED
+
+#cmakedefine HAVE_STDINT_H
+
+#cmakedefine HAVE_SANE___RESTRICT
+#cmakedefine HAVE_RESTRICT
+
+#cmakedefine HAVE___INLINE
+#cmakedefine HAVE_INLINE
+
+#cmakedefine HAVE_ATTRIBUTE_PACKED
+#cmakedefine HAVE_ATTRIBUTE_NORETURN
+#cmakedefine HAVE_ATTRIBUTE_MALLOC
+#cmakedefine HAVE_ATTRIBUTE_FORMAT
+
+#cmakedefine HAVE__VSNPRINTF_S
+#cmakedefine HAVE__STRTOI64
+#cmakedefine HAVE__FILENO
+#cmakedefine HAVE__FILELENGTH
+#cmakedefine HAVE__CHSIZE
+#cmakedefine HAVE__CHSIZE_S
+#cmakedefine HAVE__MKGMTIME
+#cmakedefine HAVE__PUTENV
+#cmakedefine HAVE__PUTENV_S
+#cmakedefine HAVE__TZSET
+
+#cmakedefine HAVE_SNPRINTF
+#cmakedefine HAVE_STRTOLL
+#cmakedefine HAVE_FILELENGTH
+#cmakedefine HAVE_FSTAT
+#cmakedefine HAVE_STRPTIME
+#cmakedefine HAVE_FTRUNCATE
+#cmakedefine HAVE_SETENV
+#cmakedefine HAVE_PUTENV
+#cmakedefine HAVE_TZSET
+
+#cmakedefine HAVE_GETTEXT
+
+
+#define G_(s) (s)
+#ifdef HAVE_GETTEXT
+	#include <locale.h>
+	#include <libintl.h>
+	#define _(s) gettext(s)
+	#define N_(s1, s2, n) ngettext(s1, s2, n)
+
+	#define GETTEXT_DOMAIN "${PROJECT_NAME}"
+	#define GETTEXT_DIRNAME "${CMAKE_INSTALL_PREFIX}/share/locale"
+#else /* ! HAVE_GETTEXT */
+	#define _(s) (s)
+	#define N_(s1, s2, n) ((n) == 1 ? (s1) : (s2))
+#endif /* ! HAVE_GETTEXT */
+
+#ifdef HAVE_STDINT_H
+	#include <stdint.h>
+#elif defined(_MSC_VER)
+	#define int8_t   signed   __int8
+	#define int16_t  signed   __int16
+	#define int32_t  signed   __int32
+	#define int64_t  signed   __int64
+	#define uint8_t  unsigned __int8
+	#define uint16_t unsigned __int16
+	#define uint32_t unsigned __int32
+	#define uint64_t unsigned __int64
+
+	#define UINT8_MAX  (0xFFU)
+	#define UINT16_MAX (0xFFFFU)
+	#define UINT32_MAX (0xFFFFFFFFU)
+	#define UINT64_MAX (0xFFFFFFFFFFFFFFFFULL)
+#endif /* _MSC_VER */
+
+#ifndef HAVE_SANE___RESTRICT
+	#ifdef HAVE_RESTRICT
+		#define __restrict restrict
+	#else
+		#define __restrict
+	#endif
+#endif /* ! HAVE_SANE___RESTRICT */
+
+#ifndef HAVE_INLINE
+	#ifdef HAVE___INLINE
+		#define inline __inline
+	#else
+		#define inline
+	#endif
+#endif /* ! HAVE_INLINE */
+
+#ifdef HAVE_ATTRIBUTE_PACKED
+	#define ATTRIBUTE_PACKED __attribute__((packed))
+#else /* ! HAVE_ATTRIBUTE_PACKED */
+	/* TODO: Check if the program really works. */
+	#define ATTRIBUTE_PACKED
+#endif /* ! HAVE_ATTRIBUTE_PACKED */
+
+#ifdef HAVE_ATTRIBUTE_NORETURN
+	#define ATTRIBUTE_NORETURN __attribute__((noreturn))
+#else /* ! HAVE_ATTRIBUTE_NORETURN */
+	#define ATTRIBUTE_NORETURN
+#endif /* ! HAVE_ATTRIBUTE_NORETURN */
+
+#ifdef HAVE_ATTRIBUTE_MALLOC
+	#define ATTRIBUTE_MALLOC __attribute__((malloc))
+#else /* ! HAVE_ATTRIBUTE_MALLOC */
+	#define ATTRIBUTE_MALLOC
+#endif /* ! HAVE_ATTRIBUTE_MALLOC */
+
+#ifdef HAVE_ATTRIBUTE_FORMAT
+	#define ATTRIBUTE_FORMAT(at, si, fi) __attribute__((format (at, si, fi)))
+#else /* ! HAVE_ATTRIBUTE_FORMAT */
+	#define ATTRIBUTE_FORMAT(at, si, fi)
+#endif /* ! HAVE_ATTRIBUTE_FORMAT */
+
+/*  [v]snprintf -- MinGW >= 3.14 (2007), glibc >= 2.1 (1997):
+ *     Always returns the required length.
+ * _[v]snprintf -- MinGW <  3.14, Windows XP msvcrt.dll:
+ *     fmt != NULL: Returns -1 if size is too small, errno is unchanged.
+ *     fmt == NULL: Returns the required length no matter what size is
+ *                  (unlike the regular implementations).
+ * _[v]snprintf_s with _TRUNCATE -- msvcrt80.dll (2005):
+ *     Returns -1 if size is too small, errno is ERANGE.
+ *     fmt == NULL || size <= 0: assert()
+ *     _[v]scprintf can be used to get the required string length.
+ *
+ * On several systems, there's no way of either getting the required length
+ * or detecting that it's the buffer size that has caused an error.
+ * Let's ignore them.
+ */
+#if !defined(HAVE_SNPRINTF) && defined(HAVE__VSNPRINTF_S)
+	#include <stdio.h>
+	#include <stdarg.h>
+
+	static int __snprintf (char *str, size_t size, const char *format, ...)
+	{
+		va_list pa;
+		int ret;
+
+		va_start(pa, format);
+		if (str)
+			ret = _vsnprintf_s(str, size, _TRUNCATE, format, pa);
+		else
+			ret = _vscprintf(format, pa);
+		va_end(pa);
+		return ret;
+	}
+
+	static inline int __vsnprintf (char *str, size_t size,
+		const char *format, va_list pa)
+	{
+		if (str)
+			return _vsnprintf_s(str, size, _TRUNCATE, format, pa);
+		else
+			return _vscprintf(format, pa);
+	}
+
+	#define snprintf __snprintf
+	#define vsnprintf __vsnprintf
+	#define HAVE_SNPRINTF
+#endif /* ! HAVE_SPRINTF && HAVE__SNPRINTF_S */
+
+#if !defined(HAVE_STRTOLL) && defined(HAVE__STRTOI64)
+	#define strtoll _strtoi64
+#endif /* !HAVE_STRTOLL && HAVE__STRTOI64 */
+
+#ifdef HAVE__FILENO
+	#ifdef fileno
+		#undef fileno
+	#endif
+	#define fileno _fileno
+#endif /* HAVE__FILENO */
+
+#ifdef HAVE__FILELENGTH
+	#include <io.h>
+	#define filelength _filelength
+#elif !defined(HAVE_FILELENGTH) && defined(HAVE_FSTAT)
+	#include <sys/stat.h>
+	static inline long filelength (int fd)
+	{
+		struct stat s;
+		if (fstat(fd, &s))
+			return -1;
+		return s.st_size;
+	}
+#endif /* ! HAVE_FILELENGTH && HAVE_FSTAT*/
+
+#ifdef HAVE_FTRUNCATE
+	#include <unistd.h>
+#else /* ! HAVE_FTRUNCATE */
+	#ifdef HAVE__CHSIZE_S
+		#include <io.h>
+		#define ftruncate(fd, size) (_chsize_s((fd), (size)) ? -1 : 0)
+	#elif defined(HAVE__CHSIZE)
+		#include <io.h>
+		#define ftruncate(fd, size) _chsize((fd), (size))
+	#endif /* ! HAVE__CHSIZE */
+#endif /* ! HAVE_FTRUNCATE */
+
+#ifndef HAVE__MKGMTIME
+	#ifdef HAVE_SETENV
+		#define __MY_SETENV(key, value) setenv((key), (value), 1)
+	#elif defined(HAVE__PUTENV_S)
+		#define __MY_SETENV(key, value) _putenv_s((key), (value))
+	#elif defined(HAVE__PUTENV)
+		#define __MY_SETENV(key, value) _putenv(key "=" value)
+	#elif defined(HAVE_PUTENV)
+		#define __MY_SETENV(key, value) putenv(key "=" value)
+	#else
+		#error Neither setenv nor putenv is present.
+	#endif
+
+	#ifdef HAVE__TZSET
+		#define tzset _tzset
+	#elif !defined(HAVE_TZSET)
+		#error tzset not present.
+	#endif
+
+	#include <time.h>
+
+	/* On Windows, putenv will remove the env. variable when an empty
+	 * value is assigned to it. In that case, tzset might use the system
+	 * settings. The solution is setting the timezone to UTC explicitly.
+	 * Note that GMT is used because it should be supported more broadly.
+	 */
+	static inline void setutctimezone (void)
+	{
+		__MY_SETENV("TZ", "GMT0");
+		tzset();
+	}
+
+	#undef __MY_SETENV
+#endif /* ! HAVE__MKGMTIME */
+
+
+#endif /* ! CONFIGURE_H_INCLUDED */
+
