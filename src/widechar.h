@@ -12,7 +12,7 @@
 
 /** Windows WCHAR (UTF-16LE) to UTF-8 conversion.
  *  @param[in]  in         A UTF-16 string.
- *  @param[in]  maxLength  Maximal length of the input string in bytes.,
+ *  @param[in]  maxLength  Maximal length of the input string in bytes.
  *  @param[out] out        Where the pointer to the result will be saved.
  *  @return On success, the length of the input wide string in bytes,
  *  	including the NULL char. On failure the function returns 0.

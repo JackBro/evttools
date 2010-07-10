@@ -76,11 +76,11 @@ int decodeWideString (const uint16_t *__restrict in, int maxLength,
 	inLen = (char *) i - (char *) in;
 
 #ifdef _WIN32
-	if (!(req = WideCharToMultiByte(CP_UTF8, 0, in, inLen,
+	if (!(req = WideCharToMultiByte(CP_UTF8, 0, in, i - in,
 		NULL, 0, NULL, NULL)))
 		return 0;
 	*out = xmalloc(req * sizeof(char));
-	if (!WideCharToMultiByte(CP_UTF8, 0, in, inLen,
+	if (!WideCharToMultiByte(CP_UTF8, 0, in, i - in,
 		*out, req, NULL, NULL))
 	{
 		free(*out);
@@ -114,7 +114,7 @@ int encodeMBString (char *__restrict in, uint16_t **__restrict out)
 		free(*out);
 		return 0;
 	}
-	return req;
+	return req * sizeof(uint16_t);
 #else /* ! _WIN32 */
 	return iconvWrapper("UTF-8", "UTF-16LE",
 		in, inLen, (char **) out);
