@@ -36,7 +36,8 @@ CsvReadStatus;
 /** Read a field from the file.
  *  @param[in]  rdr    A reader object.
  *  @param[out] field  The field data, if the function returns CSV_FIELD.
- *  	It has to be freed with the standard system free() function.
+ *                     You may pass NULL if you don't want it. It has to be
+ *                     freed with the standard system free() function.
  */
 CsvReadStatus csvRead (CsvReader rdr, char **field);
 

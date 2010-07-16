@@ -19,7 +19,7 @@
 
 void xalloc_die (const char *fun)
 {
-	fprintf(stderr, "Error: %s: %s\n", fun, strerror(errno));
+	fprintf(stderr, _("Error: %s: %s\n"), fun, strerror(errno));
 	exit(EXIT_FAILURE);
 }
 

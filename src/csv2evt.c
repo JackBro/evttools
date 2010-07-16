@@ -337,16 +337,20 @@ static int readFilesizeRecord
 	if (csvRead(rdr, &csvToken) != CSV_FIELD)
 	{
 		fputs(_("Error: Failed to read the filesize record."), stderr);
+		free(csvToken);
 		return -1;
 	}
 	hdr->maxSize = strtol(csvToken, &p, 10);
 	if (*p)
 	{
 		fputs(_("Error: Failed to parse the filesize record."), stderr);
+		free(csvToken);
 		return -1;
 	}
+	free(csvToken);
+
 	/* Skip other fields. The field this fails on is CSV_EOR. */
-	while (csvRead(rdr, &csvToken) == CSV_FIELD)
+	while (csvRead(rdr, NULL) == CSV_FIELD)
 		continue;
 
 	return 0;
@@ -548,6 +552,9 @@ static void processField (ConvCtx *ctx)
 static time_t parseTime (const char *token)
 {
 	struct tm tm;
+
+	/* Initialize the structure. */
+	memset(&tm, 0, sizeof(struct tm));
 
 #ifdef HAVE_STRPTIME
 	strptime(token, "%Y-%m-%d %H:%M:%S", &tm);

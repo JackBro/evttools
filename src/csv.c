@@ -98,17 +98,23 @@ csvRead_begin:
 
 /* Send a token to the caller. */
 csvRead_send:
-	if (!buff)
-		p = buff = xmalloc(1);
-	*p++ = '\0';
-	*field = buff;
+	if (field)
+	{
+		if (!buff)
+			p = buff = xmalloc(1);
+		*p++ = '\0';
+		*field = buff;
+	}
 	return CSV_FIELD;
 
 /* Add a character to the token. */
 csvRead_push:
+	if (!field)
+		goto csvRead_begin;
+
 	if (!buff)
 		p = buff = xmalloc(buffAlloc);
-	else if (p + 1 > buff + buffAlloc)
+	else if (p + 1 >= buff + buffAlloc)
 	{
 		char *newBuff;
 
