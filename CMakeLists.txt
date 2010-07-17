@@ -1,5 +1,8 @@
-cmake_minimum_required (VERSION 2.6)
 project (evttools C)
+cmake_minimum_required (VERSION 2.6)
+
+# Default to 2.6.3 behaviour
+cmake_policy (VERSION 2.6.3)
 
 # Moar warnings
 # NOTE: GCC 2.95 doesn't support -Wextra
@@ -112,7 +115,7 @@ configure_file (${CMAKE_SOURCE_DIR}/configure.h.in
 include_directories (${CMAKE_BINARY_DIR})
 
 # Install man pages
-file (GLOB manuals "man/*")
+file (GLOB manuals "man/[^.]*")
 foreach (man ${manuals})
 	# Some files might need generating
 	if (man MATCHES "\\.in$")
@@ -154,12 +157,11 @@ add_executable (csv2evt src/csv2evt.c
 	${project_common_sources} ${project_common_headers})
 
 # The files to be installed
-install (TARGETS evt2csv DESTINATION bin)
-install (TARGETS csv2evt DESTINATION bin)
+install (TARGETS evt2csv DESTINATION "bin")
+install (TARGETS csv2evt DESTINATION "bin")
 
 # Do some unit tests
 include (CTest)
-enable_testing ()
 
 if (BUILD_TESTING)
 	create_test_sourcelist (tests_sources testdriver.c
@@ -184,10 +186,19 @@ endif (BUILD_TESTING)
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Tools for Windows .evt files.")
 set (CPACK_PACKAGE_VENDOR "Přemysl Janouch")
 set (CPACK_PACKAGE_CONTACT "p.janouch@gmail.com")
+set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set (CPACK_PACKAGE_VERSION_MAJOR ${project_VERSION_MAJOR})
 set (CPACK_PACKAGE_VERSION_MINOR ${project_VERSION_MINOR})
 set (CPACK_PACKAGE_VERSION_PATCH ${project_VERSION_PATCH})
+set (CPACK_GENERATOR "TGZ;ZIP")
+set (CPACK_PACKAGE_FILE_NAME
+	"${PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 set (CPACK_PACKAGE_INSTALL_DIRECTORY
 	"${PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}")
+set (CPACK_SOURCE_GENERATOR "TGZ;ZIP")
+set (CPACK_SOURCE_IGNORE_FILES "/build;/.svn")
+set (CPACK_SOURCE_PACKAGE_FILE_NAME
+	"${PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}")
+
 include (CPack)
 
