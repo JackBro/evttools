@@ -1,0 +1,58 @@
+ - 1.0.0
+    -> Ability to append records to a file
+    -> Move out EVT file operations to evt.c for a greater modularity
+        - Rewrite evt2csv and csv2evt
+
+ - Complete the Doxygen documentation.
+    -> http://www.stack.nl/~dimitri/doxygen/autolink.html
+    -> http://www.stack.nl/~dimitri/doxygen/commands.html
+
+ - assert() function inputs etc.
+    -> Don't assert errors, just what should never happen.
+ - A program should be able to work without processing exceptions
+
+ - evtdump or something like that
+    -> A switch for showing just basic info
+
+    -> Ability to dump event log records from any stream
+        - The problem with wrapped records can be solved by checking
+          the record data and eventually searching for the record length
+          from the position of the header
+        - This solution however requires that the log file
+          is continuous and not fragmented or damaged
+    -> Statistics - total number of records, frequency of various
+       event sources and IDs, ...
+
+    -> Event ID 6161 - Source: Print - A file failed to print: the name
+       of the file that failed, username, printer
+    -> Event ID 35 - Source: W32Time - System uses NTP to sync time:
+       provides the IP address assigned to the interface
+    -> Event ID 1007 - Source: WinDefend - malware detected, event strings
+       contain information about the malware
+
+    -> Logon
+       http://support.microsoft.com/kb/326985
+
+    -> Windows 2000 Security Event Descriptions
+       http://support.microsoft.com/kb/299475
+       http://support.microsoft.com/kb/301677/EN-US/
+    -> Windows 2003 list
+       http://technet.microsoft.com/cs-cz/library/cc163121(en-us).aspx#EKH
+
+ - More information (these resources were not processed)
+    -> http://www.stevebunting.org/udpd4n6/forensics/repaireventlogfile.htm
+       Some text about replacing EVT files in System32\drivers
+    -> http://www.microsoft.com/technet/support/ee/ee_advanced.aspx
+       Detailed message explanations, recommended user actions etc.
+    -> EventID.net
+
+ - EVTX: http://computer.forensikblog.de/en/topics/windows/vista_event_log/
+    -> Windows Vista+ events
+       http://support.microsoft.com/default.aspx?scid=kb;EN-US;947226
+    -> A Vista+ command that dumps security event messages
+       "add 4096" rule may not work, but it's only orientational
+
+       http://blogs.msdn.com/b/ericfitz/archive/2007/07/31/
+       documentation-on-the-windows-vista-and-windows-server
+       -2008-security-events.aspx
+

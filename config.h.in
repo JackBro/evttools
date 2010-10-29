@@ -1,0 +1,225 @@
+/**
+ *  @file config.h.in
+ *  @brief Tries to fix various differences in compilers and libraries.
+ *
+ */
+
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+#cmakedefine HAVE_UNISTD_H
+
+#cmakedefine HAVE__VSNPRINTF_S
+#cmakedefine HAVE__STRTOI64
+#cmakedefine HAVE__ATOI64
+#cmakedefine HAVE__FILENO
+#cmakedefine HAVE__FSTATI64
+#cmakedefine HAVE__FILELENGTHI64
+#cmakedefine HAVE__CHSIZE
+#cmakedefine HAVE__CHSIZE_S
+#cmakedefine HAVE__MKGMTIME
+#cmakedefine HAVE__PUTENV
+#cmakedefine HAVE__PUTENV_S
+#cmakedefine HAVE__TZSET
+
+#cmakedefine HAVE_SNPRINTF
+#cmakedefine HAVE_STRTOLL
+#cmakedefine HAVE_FILELENGTH
+#cmakedefine HAVE_FSTAT
+#cmakedefine HAVE_STRPTIME
+#cmakedefine HAVE_FTRUNCATE
+#cmakedefine HAVE_SETENV
+#cmakedefine HAVE_PUTENV
+#cmakedefine HAVE_TZSET
+
+#cmakedefine HAVE_GETTEXT
+#cmakedefine HAVE_GETOPT
+
+
+#ifdef HAVE_UNISTD_H
+	#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+
+#define N_(s) (s)
+#ifdef HAVE_GETTEXT
+	#include <locale.h>
+	#include <libintl.h>
+	#define _(s) gettext(s)
+
+	#define GETTEXT_DOMAIN "${CMAKE_PROJECT_NAME}"
+	#define GETTEXT_DIRNAME "${CMAKE_INSTALL_PREFIX}/share/locale"
+#else /* ! HAVE_GETTEXT */
+	#define _(s) (s)
+#endif /* ! HAVE_GETTEXT */
+
+#ifndef HAVE_GETOPT
+	#define getopt xtnd_getopt
+	#define optarg xtnd_optarg
+	#define optopt xtnd_optopt
+	#define optind xtnd_optind
+	#define opterr xtnd_opterr
+#endif /* ! HAVE_GETOPT */
+
+/*  [v]snprintf -- MinGW >= 3.14 (2007), glibc >= 2.1 (1997):
+ *     Always returns the required length.
+ * _[v]snprintf -- MinGW <  3.14, msvcrt.dll (VC60):
+ *     fmt != NULL: Returns -1 if size is too small, errno is unchanged.
+ *     fmt == NULL: Returns the required length no matter what size is
+ *                  (unlike the regular implementations).
+ * _[v]snprintf_s with _TRUNCATE -- msvcrt80.dll (2005):
+ *     Returns -1 if size is too small, errno is ERANGE.
+ *     fmt == NULL || size <= 0: assert()
+ *     _[v]scprintf can be used to get the required string length.
+ *
+ * On several systems, there's no way of either getting the required length
+ * or detecting that it's the buffer size that has caused an error.
+ * Let's ignore them.
+ */
+#if !defined(HAVE_SNPRINTF) && defined(HAVE__VSNPRINTF_S)
+	#include <stdio.h>
+	#include <stdarg.h>
+
+	static int
+	__snprintf (char *str, size_t size, const char *format, ...)
+	{
+		va_list pa;
+		int ret;
+
+		va_start (pa, format);
+		if (str)
+			ret = _vsnprintf_s (str, size, _TRUNCATE, format, pa);
+		else
+			ret = _vscprintf (format, pa);
+		va_end (pa);
+		return ret;
+	}
+
+	static inline int
+	__vsnprintf (char *str, size_t size, const char *format, va_list pa)
+	{
+		if (str)
+			return _vsnprintf_s (str, size, _TRUNCATE, format, pa);
+		else
+			return _vscprintf (format, pa);
+	}
+
+	#define snprintf __snprintf
+	#define vsnprintf __vsnprintf
+	#define HAVE_SNPRINTF
+#endif /* ! HAVE_SPRINTF && HAVE__SNPRINTF_S */
+
+#ifndef HAVE_STRTOLL
+	#ifdef HAVE__STRTOI64
+		#define strtoll _strtoi64
+	/* A little bit hackish since it works only for decimal numbers. */
+	#elif defined (HAVE__ATOI64)
+		#include <stdlib.h>
+		static inline __int64
+		strtoll (const char *nptr, char **endptr, int base)
+		{
+			long result;
+
+			errno = 0;
+			result = strtol (nptr, endptr, base);
+			if (errno != ERANGE)
+				return result;
+			if (base == 10)
+				return _atoi64 (nptr);
+			if (result == LONG_MIN)
+				return _I64_MIN;
+			if (result == LONG_MAX)
+				return _I64_MAX;
+		}
+	#endif /* HAVE__ATOI64 */
+#endif /* ! HAVE_STRTOLL */
+
+#ifdef HAVE__FILENO
+	#ifdef fileno
+		#undef fileno
+	#endif
+	#define fileno _fileno
+#endif /* HAVE__FILENO */
+
+#ifdef HAVE__FSTATI64
+	#define fstat _fstati64
+	#ifndef HAVE_FSTAT
+		#define HAVE_FSTAT
+	#endif /* HAVE_FSTAT */
+#endif /* HAVE__FSTATI64 */
+
+#ifdef HAVE__FILELENGTHI64
+	#include <io.h>
+	#define filelength _filelengthi64
+#elif !defined(HAVE_FILELENGTH)
+	/* XXX: Return off_t? Drop the second fallback completely? */
+	#ifdef HAVE_FSTAT
+		#include <sys/stat.h>
+		static inline long
+		filelength (int fd)
+		{
+			struct stat s;
+			if (fstat (fd, &s))
+				return -1;
+			return s.st_size;
+		}
+	#else /* ! HAVE_FSTAT */
+		static inline long
+		filelength (int fd)
+		{
+			off_t off;
+			if ((off = lseek (fd, 0, SEEK_END)) == (off_t) -1)
+				return -1;
+			return off;
+		}
+	#endif /* ! HAVE_FSTAT */
+#endif /* ! HAVE_FILELENGTH */
+
+#ifndef HAVE_FTRUNCATE
+	#ifdef HAVE__CHSIZE_S
+		#include <io.h>
+		#define ftruncate(fd, size) (_chsize_s ((fd), (size)) ? -1 : 0)
+	#elif defined(HAVE__CHSIZE)
+		#include <io.h>
+		#define ftruncate(fd, size) _chsize ((fd), (size))
+	#endif /* ! HAVE__CHSIZE */
+#endif /* ! HAVE_FTRUNCATE */
+
+#ifndef HAVE__MKGMTIME
+	#ifdef HAVE_SETENV
+		#define __MY_SETENV(key, value) setenv ((key), (value), 1)
+	#elif defined(HAVE__PUTENV_S)
+		#define __MY_SETENV(key, value) _putenv_s ((key), (value))
+	#elif defined(HAVE__PUTENV)
+		#define __MY_SETENV(key, value) _putenv (key "=" value)
+	#elif defined(HAVE_PUTENV)
+		#define __MY_SETENV(key, value) putenv (key "=" value)
+	#else
+		#error Neither setenv nor putenv is present.
+	#endif
+
+	#ifdef HAVE__TZSET
+		#define tzset _tzset
+	#elif !defined(HAVE_TZSET)
+		#error tzset not present.
+	#endif
+
+	#include <time.h>
+
+	/* On Windows, putenv will remove the env. variable when an empty
+	 * value is assigned to it. In that case, tzset might use the system
+	 * settings. The solution is setting the timezone to UTC explicitly.
+	 * Note that GMT is used because it should be supported more broadly.
+	 */
+	static inline void
+	setutctimezone (void)
+	{
+		__MY_SETENV("TZ", "GMT0");
+		tzset();
+	}
+
+	#undef __MY_SETENV
+#endif /* ! HAVE__MKGMTIME */
+
+
+#endif /* ! __CONFIG_H__ */
+

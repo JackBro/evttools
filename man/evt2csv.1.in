@@ -1,0 +1,75 @@
+.TH EVT2CSV 1 "July 9, 2010" "${CMAKE_PROJECT_NAME} ${project_VERSION_MAJOR}.${project_VERSION_MINOR}.${project_VERSION_PATCH}" "User Manuals"
+.SH NAME
+evt2csv \- convert Windows event log files to textual CSV format
+.SH SYNOPSIS
+.B evt2csv
+.I input.evt
+[ - | 
+.I output.csv
+] 
+.SH DESCRIPTION
+.B evt2csv
+reads an input file in the binary Windows event log file
+format and converts it to the CSV file format. The result
+will be outputted either to the filename specified on the
+command line or to the standard output of the program.
+
+You can edit this output and feed it to the
+.BR csv2evt (1)
+tool.
+.SH OPTIONS
+.IP -h
+Print a help message.
+.SH "CSV FIELDS"
+The first record in the output will contain just a single
+field that specifies the file size of the original binary
+event log file.
+
+The rest of records has a fixed count of fields, which
+go in the following order:
+.RS 2
+.IP "1." 4
+.B The number of the record
+in the event log.
+.IP "2." 4
+.B Time generated.
+This is the time at which the entry was submitted (UTC).
+.IP "3." 4
+.B Time written.
+This is the time at which the entry was received
+by the Windows service to be written to the log (UTC).
+.IP "4." 4
+.B The event identifier.
+The value is specific to the event source for the event.
+.IP "5." 4
+.B The type of event.
+This may be "Information", "Warning", "Error",
+"Audit Success" or "Audit Failure".
+.IP "6." 4
+.B The category for this event.
+The meaning of this value depends on the event source.
+.IP "7." 4
+.B The source name.
+This specifies the name of the event source.
+.IP "8." 4
+.B The computer name.
+This is the name of the computer that generated the event.
+.IP "9." 4
+.B The user security identifier (SID).
+This identifies the active user at the time this event
+was logged.
+.IP "10." 4
+.B Description strings.
+These are merged into some message specific to the event
+identifier and source name. These strings are separated
+by a vertical line character, or a pipe if you want: |.
+You may escape this character with a backslash.
+.IP "11." 4
+.B Event-specific binary data.
+This is encoded in base64.
+.RE 2
+.SH AUTHOR
+Premysl Janouch <p.janouch at gmail dot com>
+.SH "SEE ALSO"
+.BR csv2evt (1)
+

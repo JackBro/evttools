@@ -1,0 +1,231 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: evttools 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-07-09 05:50+0200\n"
+"PO-Revision-Date: \n"
+"Last-Translator: Přemysl Janouch <p.janouch@gmail.com>\n"
+"Language-Team: Czech <p.janouch@gmail.com>\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"X-Poedit-Language: Czech\n"
+"X-Poedit-Country: CZECH REPUBLIC\n"
+"X-Poedit-SourceCharset: utf-8\n"
+
+#: ../src/csv2evt.c:405
+msgid "A record with a non-positive record number"
+msgstr "Záznam nemající kladné číslo záznamu"
+
+#: ../src/csv2evt.c:412
+msgid ""
+"A record with a record number that is less than or equal to the previous "
+"record"
+msgstr "Záznam s číslem záznamu menším nebo shodným s předchozím záznamem"
+
+#: ../src/csv2evt.c:420
+msgid ""
+"A record without a record number. You can prevent this error with the -i "
+"option"
+msgstr "Záznam bez čísla záznamu. Této chybě můžete předejít pomocí volby -i"
+
+#: ../src/csv2evt.c:410
+msgid "Discontiguous record"
+msgstr "Nenásledující záznam"
+
+#: ../src/csv2evt.c:357
+#, c-format
+msgid "Error at line %ld: %s. I'm skipping it.\n"
+msgstr "Chyba na řádku %ld: %d. Přeskakuju ho.\n"
+
+#: ../src/csv2evt.c:300
+#, c-format
+msgid "Error at line %ld: Incomplete record. I'm skipping it.\n"
+msgstr "Chyba na řádku %ld: Nekompletní záznam. Přeskakuju ho.\n"
+
+#: ../src/evt2csv.c:105
+msgid "Error: ELF signature doesn't match.\n"
+msgstr "Chyba: ELF signatura se neshoduje.\n"
+
+#: ../src/csv2evt.c:324
+#, fuzzy
+msgid "Error: Error reading the input file."
+msgstr "Chyba: Chyba při čtení."
+
+#: ../src/evt2csv.c:120
+msgid "Error: Failed to get file size.\n"
+msgstr "Chyba: Nemohu získat velikost souboru.\n"
+
+#: ../src/csv2evt.c:738
+#, fuzzy
+msgid "Error: Failed to get position in the output file."
+msgstr "Chyba: Nemohu získat velikost souboru.\n"
+
+#: ../src/evt2csv.c:62
+#, c-format
+msgid "Error: Failed to open %s for reading.\n"
+msgstr "Chyba: Nemohu otevřít %s pro čtení.\n"
+
+#: ../src/evt2csv.c:70
+#, c-format
+msgid "Error: Failed to open %s for writing.\n"
+msgstr "Chyba: Nemohu otevřít %s pro zápis.\n"
+
+#: ../src/csv2evt.c:345
+#, fuzzy
+msgid "Error: Failed to parse the filesize record."
+msgstr "Chyba: Nemohu získat velikost souboru.\n"
+
+#: ../src/evt2csv.c:100
+msgid "Error: Failed to read ELF header.\n"
+msgstr "Chyba: Nemohu přečíst ELF hlavičku.\n"
+
+#: ../src/csv2evt.c:339
+#, fuzzy
+msgid "Error: Failed to read the filesize record."
+msgstr "Chyba: Nemohu získat velikost souboru.\n"
+
+#: ../src/csv2evt.c:748
+#, fuzzy
+msgid "Error: Failed to set position in the output file."
+msgstr "Chyba: Nemohu získat velikost souboru.\n"
+
+#: ../src/csv2evt.c:253
+#, fuzzy
+msgid "Error: Failed to set the size of the output file."
+msgstr "Chyba: Nemohu získat velikost souboru.\n"
+
+#: ../src/csv2evt.c:641
+#, fuzzy
+msgid "Error: Failed to write a record; not enough space."
+msgstr "Chyba: Nemohu přečíst ELF hlavičku.\n"
+
+#: ../src/evt2csv.c:164
+#, c-format
+msgid "Error: Record %u is longer than the whole file.\n"
+msgstr "Chyba: Záznam %u je delší než celý soubor.\n"
+
+#: ../src/evt2csv.c:315
+#, c-format
+msgid "Error: SID decoding failed in record %u.\n"
+msgstr "Chyba: Dekódování SID selhalo v záznamu %u.\n"
+
+#: ../src/evt2csv.c:328
+#, c-format
+msgid "Error: String decoding failed in record %u.\n"
+msgstr "Chyba: Dekódování řetězců selhalo v záznamu %u. \n"
+
+#: ../src/evt2csv.c:208
+msgid "Error: Unexpected end of file.\n"
+msgstr "Chyba: Neočekávaný konec souboru.\n"
+
+#: ../src/csv2evt.c:617
+#, fuzzy
+msgid "Error: We've got past the end of log file."
+msgstr "Chyba: Neočekávaný konec souboru.\n"
+
+#: ../src/evt2csv.c:200
+#, c-format
+msgid "Error: fread: %s\n"
+msgstr "Chyba: fred: %s\n"
+
+#: ../src/evt2csv.c:115
+#, c-format
+msgid "Error: fseek: %s.\n"
+msgstr "Chyba: fseek: %s.\n"
+
+#: ../src/csv2evt.c:541
+msgid "Extraneous field(s) in a record"
+msgstr "Přebytečná pole v záznamu"
+
+#: ../src/csv2evt.c:482
+msgid "Failed to decode SID"
+msgstr "Selhalo dekódování SID"
+
+#: ../src/csv2evt.c:510
+msgid "Failed to decode strings"
+msgstr "Selhalo dekódování řetězců"
+
+#: ../src/csv2evt.c:470
+#, fuzzy
+msgid "Failed to decode the computer name"
+msgstr "Varování: Nemohu dekódovat řetězec se jménem počítače v záznamu %u.\n"
+
+#: ../src/csv2evt.c:464
+#, fuzzy
+msgid "Failed to decode the event source name"
+msgstr "Varování: Nemohu dekódovat řetězec se jménem zdroje v záznamu %u.\n"
+
+#: ../src/csv2evt.c:191
+#, fuzzy, c-format
+msgid "Failed to open %s for reading.\n"
+msgstr "Chyba: Nemohu otevřít %s pro čtení.\n"
+
+#: ../src/csv2evt.c:199
+#, fuzzy, c-format
+msgid "Failed to open %s for writing.\n"
+msgstr "Chyba: Nemohu otevřít %s pro zápis.\n"
+
+#: ../src/csv2evt.c:437
+msgid "Failed to parse event ID"
+msgstr "Selhalo parsování ID události"
+
+#: ../src/csv2evt.c:460
+msgid "Failed to parse event category"
+msgstr "Selhalo parsování kategorie události"
+
+#: ../src/csv2evt.c:454
+msgid "Failed to parse event type in a record"
+msgstr "Selhalo parsování typu událost v záznamu"
+
+#: ../src/csv2evt.c:425
+msgid "Failed to parse generation time in a record"
+msgstr "Selhalo parsování času generace v záznamu"
+
+#: ../src/csv2evt.c:431
+msgid "Failed to parse written time in a record"
+msgstr "Selhalo parsování času zapsání v záznamu"
+
+#: ../src/csv2evt.c:396 ../src/csv2evt.c:402
+msgid "Invalid record number"
+msgstr "Vadné číslo záznamu"
+
+#: ../src/csv2evt.c:183
+#, fuzzy
+msgid "Usage: csv2evt input-file [output-file]\n"
+msgstr "Použití: evt2csv vstupní-soubor [výstupní-soubor]\n"
+
+#: ../src/evt2csv.c:56
+msgid "Usage: evt2csv input-file [output-file]\n"
+msgstr "Použití: evt2csv vstupní-soubor [výstupní-soubor]\n"
+
+#: ../src/csv2evt.c:364
+#, c-format
+msgid "Warning at line %ld: %s.\n"
+msgstr "Varování na řádku %ld: %s.\n"
+
+#: ../src/evt2csv.c:291
+#, c-format
+msgid "Warning: Failed to decode the computer name string in record %u.\n"
+msgstr "Varování: Nemohu dekódovat řetězec se jménem počítače v záznamu %u.\n"
+
+#: ../src/evt2csv.c:277
+#, c-format
+msgid "Warning: Failed to decode the source name string in record %u.\n"
+msgstr "Varování: Nemohu dekódovat řetězec se jménem zdroje v záznamu %u.\n"
+
+#: ../src/evt2csv.c:299
+#, c-format
+msgid "Warning: Record %u has overflowing SID field. I'm not reading it.\n"
+msgstr "Varování: Záznam %u má přetékající pole SID. Nebudu ho číst.\n"
+
+#: ../src/evt2csv.c:355
+#, c-format
+msgid "Warning: Record %u has overflowing data field. I'm not reading it.\n"
+msgstr "Varování: Záznam %u má přetékající pole s day. Nebudu je číst.\n"
+
+#: ../src/evt2csv.c:109
+msgid "Warning: The log file is marked dirty.\n"
+msgstr "Varování: Soubor je označen jako špinavý.\n"

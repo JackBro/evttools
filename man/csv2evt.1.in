@@ -1,0 +1,27 @@
+.TH CSV2EVT 1 "July 9, 2010" "${CMAKE_PROJECT_NAME} ${project_VERSION_MAJOR}.${project_VERSION_MINOR}.${project_VERSION_PATCH}" "User Manuals"
+.SH NAME
+csv2evt \- convert CSV to binary Windows event log files
+.SH SYNOPSIS
+.B csv2evt
+{ - |
+.I input.csv
+}
+.I output.evt
+.SH DESCRIPTION
+.B csv2evt
+reads an input file in the CSV format and converts it to
+the binary Windows event log file format. The result
+will be outputted to the filename specified on the
+command line.
+
+For a description of the CSV file format accepted by this
+tool, see the manual page for
+.BR csv2evt (1).
+.SH OPTIONS
+.IP -h
+Print a help message.
+.SH AUTHOR
+Premysl Janouch <p.janouch at gmail dot com>
+.SH "SEE ALSO"
+.BR evt2csv (1)
+
