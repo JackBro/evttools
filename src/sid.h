@@ -24,7 +24,7 @@ char *sidToString (const void *sid, size_t length);
  *  @return The binary SID on success (dynamically allocated
  *  	by malloc), NULL on failure.
  */
-void *sidToBinary (const char *__restrict sid, size_t *__restrict length);
+void *sidToBinary (const char *restrict sid, size_t *restrict length);
 
 
 #endif /* ! __SID_H__ */

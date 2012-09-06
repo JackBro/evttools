@@ -47,8 +47,7 @@ ATTRIBUTE_PACKED Sid;
 
 
 static int snprintfExtend (char **out, size_t *size, unsigned int offset,
-	const char *format, ...) ATTRIBUTE_FORMAT(printf, 4, 5);
-
+	const char *format, ...) ATTRIBUTE_FORMAT (printf, 4, 5);
 
 /** A version of snprintf that automatically resizes the output buffer
  *  when needed. *out and *size must either both be zero or *out has to point
@@ -68,8 +67,8 @@ snprintfExtend (char **out, size_t *size, unsigned int offset,
 	va_list ap;
 	int ret;
 
-	assert (out != NULL);
-	assert (size != NULL);
+	assert (out    != NULL);
+	assert (size   != NULL);
 	assert (format != NULL);
 
 	va_start (ap, format);
@@ -136,7 +135,7 @@ sidToString (const void *sid, size_t length)
  * This might be restricted, however it's not that important.
  */
 void *
-sidToBinary (const char *__restrict sid, size_t *__restrict length)
+sidToBinary (const char *restrict sid, size_t *restrict length)
 {
 	Buffer buf = BUFFER_INITIALIZER;
 	Sid head;
@@ -144,7 +143,7 @@ sidToBinary (const char *__restrict sid, size_t *__restrict length)
 	long num;
 	long long auth;
 
-	assert (sid != NULL);
+	assert (sid    != NULL);
 	assert (length != NULL);
 
 	if (sid[0] != 'S' || sid[1] != '-')
@@ -181,7 +180,7 @@ sidToBinary (const char *__restrict sid, size_t *__restrict length)
 			return NULL;
 		}
 		((Sid *) buf.data)->subAuthorityCnt++;
-		bufferAppend (&buf, &sa, sizeof(uint32_t), 0);
+		bufferAppend (&buf, &sa, sizeof sa, 0);
 	}
 	*length = buf.used;
 	return buf.data;

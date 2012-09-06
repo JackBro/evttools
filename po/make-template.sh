@@ -27,7 +27,7 @@ if [ "$MAJOR" != "" ]; then
 fi
 
 # Finally make the template
-xgettext -LC -k_ -kN_:1,2 -kG_ ../src/*.c -o $PACKAGE.pot \
+xgettext -LC -k_ -kN_ ../src/*.c -o $PACKAGE.pot \
 	--package-name="$PACKAGE" --package-version="$VERSION" \
 	--copyright-holder="Přemysl Janouch"
 

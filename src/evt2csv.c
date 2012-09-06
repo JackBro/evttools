@@ -22,16 +22,10 @@
 #include "datastruct.h"
 
 
-static int processFile (const char *__restrict inpath,
-	const char *__restrict outpath, unsigned append);
-static void processRecord
-	(const EvtRecordData *__restrict data, CsvWriter __restrict wrt);
-
-
 /** Write a CSV field in base64. */
 static int
-writeFieldBase64 (CsvWriter __restrict wrt,
-	const void *__restrict field, size_t length)
+writeFieldBase64 (CsvWriter restrict wrt,
+	const void *restrict field, size_t length)
 {
 	base64_encodestate state;
 	char *buff;
@@ -48,80 +42,77 @@ writeFieldBase64 (CsvWriter __restrict wrt,
 }
 
 /** Process a record. */
-static void
-processRecord
-	(const EvtRecordData *__restrict data, CsvWriter __restrict wrt)
+static int
+processRecord (const EvtRecordData *restrict data, CsvWriter restrict writer)
 {
-#if 0
 	/* Yes, the buffer is large enough. */
-	char buff[40], *cur;
+	char buff[40];
+	const char *eventType;
 	Buffer final = BUFFER_INITIALIZER;
 	EvtRecordContents contents;
-	int i;
+	EvtDecodeError errorInfo;
+	int error, i;
 
-	/* TODO: The error parameter. */
-	if (evtDecodeRecordData (data, &contents, NULL))
-		/* TODO: handle this. */;
-
-	/* First field: record number. */
-	snprintf (buff, sizeof buff, "%d", data->header.recordNumber);
-	csvWrite (wrt, buff);
-
-	/* Second field: time generated (GMT). */
-	strftime (buff, sizeof buff, "%Y-%m-%d %H:%M:%S",
-		gmtime (&contents.timeGenerated));
-	csvWrite (wrt, buff);
-
-	/* Third field: time written (GMT). */
-	strftime (buff, sizeof buff, "%Y-%m-%d %H:%M:%S",
-		gmtime (&contents.timeWritten));
-	csvWrite (wrt, buff);
-
-	/* Fourth field: event ID. */
-	snprintf (buff, sizeof buff, "%u", data->header.eventID);
-	csvWrite (wrt, buff);
-
-	/* Fifth field: event type. */
-	switch (data->header.eventType)
+	if ((error = evtDecodeRecordData (data, &contents, &errorInfo)))
 	{
-		case EVT_INFORMATION_TYPE:
-			csvWrite (wrt, "Information");
-			break;
-		case EVT_WARNING_TYPE:
-			csvWrite (wrt, "Warning");
-			break;
-		case EVT_ERROR_TYPE:
-			csvWrite (wrt, "Error");
-			break;
-		case EVT_AUDIT_SUCCESS:
-			csvWrite (wrt, "Audit Success");
-			break;
-		case EVT_AUDIT_FAILURE:
-			csvWrite (wrt, "Audit Failure");
-			break;
-		default:
-			/* Unknown type: express with a number. */
-			snprintf (buff, sizeof buff, "%u", data->header.eventType);
-			csvWrite (wrt, buff);
+		/* TODO: Show some information. */
+		return error;
 	}
 
-	/* Sixth field: event category. */
+	/* 1st field: record number. */
+	snprintf (buff, sizeof buff, "%d", data->header.recordNumber);
+	csvWrite (writer, buff);
+
+	/* 2nd field: time generated (GMT). */
+	strftime (buff, sizeof buff, "%Y-%m-%d %H:%M:%S",
+		gmtime (&contents.timeGenerated));
+	csvWrite (writer, buff);
+
+	/* 3rd field: time written (GMT). */
+	strftime (buff, sizeof buff, "%Y-%m-%d %H:%M:%S",
+		gmtime (&contents.timeWritten));
+	csvWrite (writer, buff);
+
+	/* 4th field: event ID. */
+	snprintf (buff, sizeof buff, "%u", data->header.eventID);
+	csvWrite (writer, buff);
+
+	/* 5th field: event type. */
+	switch (data->header.eventType)
+	{
+		case EVT_INFORMATION_TYPE:  eventType = "Information";    break;
+		case EVT_WARNING_TYPE:      eventType = "Warning";        break;
+		case EVT_ERROR_TYPE:        eventType = "Error";          break;
+		case EVT_AUDIT_SUCCESS:     eventType = "Audit Success";  break;
+		case EVT_AUDIT_FAILURE:     eventType = "Audit Failure";  break;
+
+		default:
+			/* Unknown type: express with a number. */
+			snprintf (buff, sizeof buff, "%lu",
+				(unsigned long) data->header.eventType);
+			eventType = buff;
+	}
+	csvWrite (writer, eventType);
+
+	/* 6th field: event category. */
 	snprintf (buff, sizeof buff, "%d", data->header.eventCategory);
-	csvWrite (wrt, buff);
+	csvWrite (writer, buff);
 
 	/* TODO: Are these gonna be guaranteed to be non-null? */
-	/* Seventh field: source name (in UTF-8). */
-	csvWrite (wrt, contents.sourceName);
+	/* 7th field: source name (in UTF-8). */
+	csvWrite (writer, contents.sourceName);
 
-	/* Eighth field: computer name (in UTF-8). */
-	csvWrite (wrt, contents.computerName);
+	/* 8th field: computer name (in UTF-8). */
+	csvWrite (writer, contents.computerName);
 
-	/* Nineth field: SID. */
-	csvWrite (wrt, contents.userSid);
+	/* 9th field: SID. */
+	csvWrite (writer, contents.userSid);
 
-	/* Tenth field: strings (in UTF-8). */
+	/* 10th field: strings (in UTF-8). */
 	for (i = 0; i < contents.numStrings; i++)
 	{
+		char *cur;
+
 		if (i)
 			bufferAppendChar (&final, '|');
 
@@ -136,18 +127,18 @@ processRecord
 		}
 	}
 	bufferAppendChar (&final, '\0');
-	csvWrite (wrt, final.data);
+	csvWrite (writer, final.data);
 	bufferDestroy (&final);
 
-	/* Eleventh field: data (in base64). */
-	if (writeFieldBase64 (wrt, contents.data, contents.dataLength))
-		csvWrite (wrt, "");
+	/* 11th field: data (in base64). */
+	if (writeFieldBase64 (writer, contents.data, contents.dataLength))
+		csvWrite (writer, "");
 
 	/* End of record. */
-	csvWrite (wrt, NULL);
+	csvWrite (writer, NULL);
 
 	evtDestroyRecordContents (&contents);
-#endif
+	return EVT_OK;
 }
 
 /** Process an .evt file.
@@ -157,124 +148,120 @@ processRecord
  *  @return 0 on success, -1 otherwise.
  */
 static int
-processFile (const char *__restrict inpath, const char *__restrict outpath,
+processFile (const char *restrict inpath, const char *restrict outpath,
 	unsigned append)
 {
 	FILE *in, *out;
-	FileIO *inio;
+	FileIO *inIO;
 	struct stat s;
-	CsvWriter wrt;
-//	EvtLog *log;
+	CsvWriter writer;
+	EvtLog *log;
 	EvtRecordData data;
-	int ret = 0, error;
+	enum EvtHeaderError errorInfo;
+	const EvtHeader *header;
+	int error, ret = FALSE;
 
 	if (!(in = fopen (inpath, "rb")))
 	{
-		fprintf(stderr, _("Error: Failed to open %s for reading.\n"), inpath);
-		return -1;
+		fprintf (stderr,
+			_("Error: Failed to open `%s' for reading.\n"), inpath);
+		goto processFile_error_input;
 	}
 	if (fstat (fileno (in), &s))
 	{
-		fprintf (stderr, _("Error: %s\n"), strerror (errno));
-		fclose (in);
-		return -1;
+		fprintf (stderr, _("Error: `%s'\n"), strerror (errno));
+		goto processFile_error_output;
 	}
 	if (!S_ISREG (s.st_mode))
 	{
-		fprintf (stderr, _("Error: %s is not a regular file.\n"), inpath);
-		fclose (in);
-		return -1;
+		fprintf (stderr, _("Error: `%s' is not a regular file.\n"), inpath);
+		goto processFile_error_output;
 	}
 
-#if 0
 	if (!outpath)
 		out = stdout;
-	else if (!(out = fopen (outpath, "wb")))
+	else if (!(out = fopen (outpath, append ? "ab" : "wb")))
 	{
-		fprintf (stderr, _("Error: Failed to open %s for writing.\n"), outpath);
-		fclose (in);
-		return -1;
+		fprintf (stderr, append
+			? _("Error: Failed to open `%s' for appending.\n")
+			: _("Error: Failed to open `%s' for writing.\n"), outpath);
+		goto processFile_error_output;
 	}
 
-	inio = fileIONewForHandle (in);
-	log = evtCreate (inio);
-
-	wrt = csvWriterNew (out);
-
-#ifdef HAKUNAMATATA
-	if ((fileSize = filelength (fileno (input))) == -1)
+	inIO = fileIONewForHandle (in);
+	if (evtOpen (&log, inIO, &errorInfo))
 	{
-		fputs (_("Error: Failed to get file size.\n"), stderr);
-		return -1;
+		/* TODO: Show some information. */
+		fputs (_("Error: Opening the log file failed."), stderr);
+		goto processFile_error_log;
 	}
+
 	/* Write out a special header record with file size.
 	 * (The only non-record value that is really useful
 	 * for reconstructing the .evt.)
 	 */
-	fprintf (output, "%lu\n", fileSize);
+	writer = csvWriterNew (out);
+	if (!append)
+		fprintf (out, "%lu\n", (unsigned long) log->length);
 
-	/* XXX: Where is the header processed?! */
-	if (evtReadHeader (log))
-	{
-		fprintf (stderr, _("Error: Failed to read the header.\n"));
-		ret = -1;
-		goto processFile_end;
-	}
-#endif /* HAKUNAMATATA */
-	if (evtReposition (log, EVT_REPOSITION_FIRST))
-	{
-		fprintf (stderr, _("Error: Failed to reposition in the file.\n"));
-		ret = -1;
-		goto processFile_end;
-	}
+	header = evtGetHeader (log);
+	if (header->flags & EVT_HEADER_DIRTY)
+		fputs (_("Warning: The log file is marked dirty."), stderr);
 
 	while (!(error = evtReadRecord (log, &data)))
 	{
-		processRecord (&data, wrt);
+		error = processRecord (&data, writer);
 		evtDestroyRecordData (&data);
+
+		if (error)
+			break;
 	}
 
 	switch (error)
 	{
-	case EVT_READ_EOF:
+	case EVT_ERROR_EOF:
 		break;
 	default:
-		/* TODO: handle this. */
-		ret = -1;
-		break;
+		/* TODO: More information. */
+		goto processFile_error_content;
 	}
 
-processFile_end:
-	csvWriterDestroy (wrt);
-	evtDestroy (log);
+	ret = TRUE;
 
-	fclose (in);
+processFile_error_content:
+	if (evtClose (log))
+	{
+		fputs (_("Error: Failed to close the log file properly."), stderr);
+		ret = FALSE;
+	}
+	csvWriterDestroy (writer);
+processFile_error_log:
 	fclose (out);
-#endif
+	fileIOFree (inIO);
+processFile_error_output:
+	fclose (in);
+processFile_error_input:
 	return ret;
 }
 
 /** Show program usage. */
 static void
-showUsage (void)
+showUsage (const char *name)
 {
 	fprintf (stderr, _(
 	"Usage: %s [OPTION]... input-file [output-file]\n"
 	"\n"
 	"Options:\n"
-//	"  -r    Renumber the records to form a sequence.\n"
 	"  -a    Append to the output file rather than create a new one.\n"
-//	"        Implies -r, so that the result is not just garbage.\n"
 	"  -h    Show this help.\n"
-	"\n"), "evt2csv");
+	"\n"), name);
 }
 
 int
 main (int argc, char *argv[])
 {
-	unsigned append = 0;
-	const char *inpath, *outpath;
-	int opt;
+	const char *name, *inpath, *outpath;
+	int opt, append = 0;
 
 #ifdef HAVE_GETTEXT
     /* All we want is localized messages. */
@@ -284,6 +271,7 @@ main (int argc, char *argv[])
 	textdomain (GETTEXT_DOMAIN);
 #endif /* HAVE_GETTEXT */
 
+	name = argv[0];
 	while ((opt = getopt (argc, argv, "ah")) != -1)
 	{
 		switch (opt)
@@ -292,27 +280,30 @@ main (int argc, char *argv[])
 			append = 1;
 			break;
 		case 'h':
-			showUsage ();
+			showUsage (name);
 			exit (EXIT_SUCCESS);
 		default:
-			showUsage ();
+			showUsage (name);
 			exit (EXIT_FAILURE);
 		}
 	}
 
-	if (argc - optind < 1 || argc - optind > 2)
+	argc -= optind;
+	argv += optind;
+
+	if (argc < 1 || argc > 2)
 	{
-		showUsage ();
+		showUsage (name);
 		exit (EXIT_FAILURE);
 	}
 
-	inpath = argv[optind++];
-	if (argc - optind == 1 && *argv[optind] && strcmp (argv[optind], "-"))
-		outpath = argv[optind];
+	inpath = argv[0];
+	if (argc == 2 && strcmp (argv[1], "-"))
+		outpath = argv[1];
 	else
 		outpath = NULL;
 
-	if (processFile (inpath, outpath, append))
+	if (!processFile (inpath, outpath, append))
 		exit (EXIT_FAILURE);
 
 	return 0;

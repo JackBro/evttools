@@ -25,8 +25,8 @@
  *  and creates the conversion object itself.
  */
 static size_t
-iconvWrapper (char *__restrict from, char *__restrict to,
-	char *__restrict in, size_t inLen, char **__restrict out)
+iconvWrapper (char *restrict from, char *restrict to,
+	char *restrict in, size_t inLen, char **restrict out)
 {
 	iconv_t obj;
 	char *buff;
@@ -63,8 +63,8 @@ iconvWrapper (char *__restrict from, char *__restrict to,
 #endif /* ! _WIN32 */
 
 int
-decodeWideString (const uint16_t *__restrict in, int maxLength,
-	char **__restrict out)
+decodeWideString (const uint16_t *restrict in, int maxLength,
+	char **restrict out)
 {
 	const uint16_t *i;
 	int inLen;
@@ -72,7 +72,7 @@ decodeWideString (const uint16_t *__restrict in, int maxLength,
 	int req;
 #endif /* _WIN32 */
 
-	assert (in != NULL);
+	assert (in  != NULL);
 	assert (out != NULL);
 
 	if (maxLength <= 0)
@@ -97,15 +97,14 @@ decodeWideString (const uint16_t *__restrict in, int maxLength,
 		return 0;
 	}
 #else /* ! _WIN32 */
-	if (!iconvWrapper ("UTF-16LE", "UTF-8",
-		(char *) in, inLen, out))
+	if (!iconvWrapper ("UTF-16LE", "UTF-8", (char *) in, inLen, out))
 		return 0;
 #endif /* ! _WIN32 */
 	return inLen;
 }
 
 int
-encodeMBString (char *__restrict in, uint16_t **__restrict out)
+encodeMBString (char *restrict in, uint16_t **restrict out)
 {
 	const char *i;
 	int inLen;
@@ -113,7 +112,7 @@ encodeMBString (char *__restrict in, uint16_t **__restrict out)
 	int req;
 #endif /* _WIN32 */
 
-	assert (in != NULL);
+	assert (in  != NULL);
 	assert (out != NULL);
 
 	for (i = in; *i++; )
@@ -131,8 +130,7 @@ encodeMBString (char *__restrict in, uint16_t **__restrict out)
 	}
 	return req * sizeof (uint16_t);
 #else /* ! _WIN32 */
-	return iconvWrapper ("UTF-8", "UTF-16LE",
-		in, inLen, (char **) out);
+	return iconvWrapper ("UTF-8", "UTF-16LE", in, inLen, (char **) out);
 #endif /* ! _WIN32 */
 }
 

@@ -16,7 +16,8 @@
 #include <src/widechar.h>
 
 /** Encode a string and decode it back again. */
-int tests_widechar (int argc, char *argv[])
+int
+tests_widechar (int argc, char *argv[])
 {
 	const char *string = "Tak mówią wszyscy wariaci: że są normalni.";
 	uint16_t *wideString = NULL;

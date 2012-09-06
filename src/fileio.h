@@ -24,7 +24,7 @@ typedef size_t (*FileIORead)
  *  The parameters have the same meaning as those for fwrite().
  */
 typedef size_t (*FileIOWrite)
-	(void *ptr, size_t size, size_t nmemb, void *handle);
+	(const void *ptr, size_t size, size_t nmemb, void *handle);
 
 #define FILE_IO_WRITE(ptr, size, nmemb, h) \
 	((h)->write ((ptr), (size), (nmemb), (h)->handle))
@@ -84,7 +84,7 @@ FileIO;
 
 
 /** Create a new FileIO for a FILE.
- *  This object can be destroyed by calling the free() function.
+ *  This object can be destroyed by calling fileIOFree().
  *  @param[in] handle  The handle.
  */
 /* Calling code:
@@ -92,6 +92,11 @@ FileIO;
  *    Windows has _fstat since 98 but also has GetFileType.
  */
 FileIO *fileIONewForHandle (FILE *handle);
+
+/** Destroy an IO object.
+ *  @param[in] io  The object to destroy.
+ */
+void fileIOFree (FileIO *io);
 
 
 #endif /* ! __FILE_IO_H__ */

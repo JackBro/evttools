@@ -16,7 +16,8 @@
 #include <src/sid.h>
 
 /** Convert a text SID to a binary one and back. */
-int tests_sid (int argc, char *argv[])
+int
+tests_sid (int argc, char *argv[])
 {
 	const char *sid = "S-1-5-21-1085031214-1563985344-725345543";
 	void *binary = NULL;

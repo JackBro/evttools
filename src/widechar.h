@@ -17,8 +17,8 @@
  *  @return On success, the length of the input wide string in bytes,
  *  	including the NULL char. On failure the function returns 0.
  */
-int decodeWideString (const uint16_t *__restrict in, int maxLength,
-	char **__restrict out);
+int decodeWideString (const uint16_t *restrict in, int maxLength,
+	char **restrict out);
 
 /** UTF-8 to Windows WCHAR (UTF-16LE) conversion.
  *  @param[in]  in   A UTF-8 string.
@@ -26,7 +26,7 @@ int decodeWideString (const uint16_t *__restrict in, int maxLength,
  *  @return On success, the length of the output wide string in bytes,
  *  	including the NULL char. On failure the function returns 0.
  */
-int encodeMBString (char *__restrict in, uint16_t **__restrict out);
+int encodeMBString (char *restrict in, uint16_t **restrict out);
 
 
 #endif /* ! __WIDECHAR_H__ */

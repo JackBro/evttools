@@ -127,18 +127,21 @@ set (project_common_headers
 	src/sid.h
 	src/datastruct.h)
 
-# Build executables
-add_executable (evt2csv src/evt2csv.c
+# Make a library so that the above isn't compiled three times
+add_library (${CMAKE_PROJECT_NAME}-common STATIC
 	${project_common_sources} ${project_common_headers})
-target_link_libraries (evt2csv ${XTND_LIBRARIES})
+set (project_libraries ${XTND_LIBRARIES} ${CMAKE_PROJECT_NAME}-common)
 
-#add_executable (csv2evt src/csv2evt.c
-#	${project_common_sources} ${project_common_headers})
-#target_link_libraries (csv2evt ${XTND_LIBRARIES})
+# Build executables
+add_executable (evt2csv src/evt2csv.c ${project_common_headers})
+target_link_libraries (evt2csv ${project_libraries})
+
+add_executable (csv2evt src/csv2evt.c ${project_common_headers})
+target_link_libraries (csv2evt ${project_libraries})
 
 # The files to be installed
-install (TARGETS evt2csv DESTINATION "bin")
-#install (TARGETS csv2evt DESTINATION "bin")
+install (TARGETS evt2csv DESTINATION bin)
+install (TARGETS csv2evt DESTINATION bin)
 
 # Do some unit tests
 option (BUILD_TESTING "Build tests" OFF)
@@ -154,9 +157,8 @@ if (BUILD_TESTING)
 		tests/sid.c
 		tests/widechar.c)
 
-	add_executable (testdriver ${tests_sources}
-		${project_common_sources} ${project_common_headers})
-	target_link_libraries (testdriver ${XTND_LIBRARIES})
+	add_executable (testdriver ${tests_sources} ${project_common_headers})
+	target_link_libraries (testdriver ${project_libraries})
 
 	remove (tests_sources testdriver.c)
 	foreach (test ${tests_sources})

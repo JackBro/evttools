@@ -18,8 +18,8 @@
 
 
 int
-bufferAppend (Buffer *__restrict buf,
-	const void *__restrict data, size_t length, size_t align)
+bufferAppend (Buffer *restrict buf,
+	const void *restrict data, size_t length, size_t align)
 {
 	size_t offset;
 
@@ -68,6 +68,6 @@ int
 bufferAppendChar (Buffer *buf, char c)
 {
 	assert (buf != NULL);
-	return bufferAppend (buf, &c, sizeof (char), 0);
+	return bufferAppend (buf, &c, sizeof c, 0);
 }
 

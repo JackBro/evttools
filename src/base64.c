@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include <xtnd/xtnd.h>
+
 #include "base64.h"
 
 
@@ -70,8 +72,8 @@ base64_encode_value (char value_in)
 }
 
 int
-base64_decode_block (const char *__restrict code_in, const int length_in,
-	char *__restrict plaintext_out, base64_decodestate *__restrict state_in)
+base64_decode_block (const char *restrict code_in, const int length_in,
+	char *restrict plaintext_out, base64_decodestate *restrict state_in)
 {
 	const char *codechar = code_in;
 	char *plainchar = plaintext_out;
@@ -147,8 +149,8 @@ base64_decode_block (const char *__restrict code_in, const int length_in,
 }
 
 int
-base64_encode_block (const char *__restrict plaintext_in, int length_in,
-	char *__restrict code_out, base64_encodestate *__restrict state_in)
+base64_encode_block (const char *restrict plaintext_in, int length_in,
+	char *restrict code_out, base64_encodestate *restrict state_in)
 {
 	const char *plainchar = plaintext_in;
 	const char *const plaintextend = plaintext_in + length_in;
@@ -207,7 +209,7 @@ base64_encode_block (const char *__restrict plaintext_in, int length_in,
 
 int
 base64_encode_blockend
-	(char *__restrict code_out, base64_encodestate *__restrict state_in)
+	(char *restrict code_out, base64_encodestate *restrict state_in)
 {
 	char *codechar = code_out;
 

@@ -185,9 +185,19 @@ EvtRecordHeader;
 
 /* ===== Interface ========================================================= */
 
-#define EVT_OK         0  /** Everything's OK. */
-#define EVT_ERROR     -1  /** General error. */
-#define EVT_ERROR_IO  -2  /** Input/output error. */
+/** Error status. */
+typedef enum
+{
+	EVT_OK,               /**< Everything's OK. */
+	EVT_ERROR,            /**< General error. */
+	EVT_ERROR_IO,         /**< Input/output error. */
+	EVT_ERROR_EOF,        /**< End of file reached while reading. */
+	EVT_ERROR_LOG_FULL    /**< The log is full, no free space. */
+}
+EvtError;
+
+/** Return a textual description of the error code. */
+const char *evtXlateError (EvtError error);
 
 
 /* ===== Data manipulation ================================================= */
@@ -231,7 +241,7 @@ typedef struct
 EvtRecordData;
 
 /** Error while decoding record. */
-enum EvtDecodeError
+typedef enum
 {
 	/** The record is invalid. */
 	EVT_DECODE_INVALID              = (1 << 0),
@@ -251,7 +261,8 @@ enum EvtDecodeError
 	 *  the length field present in the beginning of it's header.
 	 */
 	EVT_DECODE_LENGTH_MISMATCH      = (1 << 7)
-};
+}
+EvtDecodeError;
 
 /** Decode record data from the raw format. If processing of any fields fails,
  *  appropriate bits in @a errors will be set and the function will return
@@ -263,12 +274,11 @@ enum EvtDecodeError
  *  @param[out] errors  Informs about what fields have failed. May be NULL.
  *  @return EVT_OK, EVT_ERROR
  */
-int evtDecodeRecordData (const EvtRecordData *__restrict input,
-	EvtRecordContents *__restrict output,
-	enum EvtDecodeError *__restrict errors);
+EvtError evtDecodeRecordData (const EvtRecordData *restrict input,
+	EvtRecordContents *restrict output, EvtDecodeError *restrict errors);
 
 /** Error while encoding record. */
-enum EvtEncodeError
+typedef enum
 {
 	/** Failed to encode the event source name. */
 	EVT_ENCODE_SOURCE_NAME_FAILED   = (1 << 0),
@@ -278,7 +288,8 @@ enum EvtEncodeError
 	EVT_ENCODE_STRINGS_FAILED       = (1 << 2),
 	/** Failed to encode SID string. */
 	EVT_ENCODE_SID_FAILED           = (1 << 3)
-};
+}
+EvtEncodeError;
 
 /** Encode record data into the raw format and build new @a output->data.
  *  @param[in] input  Input data.
@@ -286,9 +297,8 @@ enum EvtEncodeError
  *  @param[out] errors  Informs about what fields have failed. May be NULL.
  *  @return EVT_OK, EVT_ERROR
  */
-int evtEncodeRecordData (const EvtRecordContents *__restrict input,
-	EvtRecordData *__restrict output,
-	enum EvtEncodeError *__restrict errors);
+EvtError evtEncodeRecordData (const EvtRecordContents *restrict input,
+	EvtRecordData *restrict output, EvtEncodeError *restrict errors);
 
 /** Free up the memory pointed to by members of the EvtRecordContents
  *  structure and reinitialize the structure with zeros.
@@ -304,18 +314,24 @@ void evtDestroyRecordData (EvtRecordData *input);
 
 /* ===== Low-level FileIO Interface ======================================== */
 
-#define EVT_SEARCH_FAIL    0  /** Found nothing. */
-#define EVT_SEARCH_HEADER  1  /** Found a header record. */
-#define EVT_SEARCH_RECORD  2  /** Found a regular record. */
+/** The result of a low-level search. */
+typedef enum
+{
+	EVT_SEARCH_FAIL,     /**< Found nothing. */
+	EVT_SEARCH_HEADER,   /**< Found a header record. */
+	EVT_SEARCH_RECORD    /**< Found a regular record. */
+}
+EvtSearchResult;
 
 /** Searches for EVT signature and guesses the record type from the length.
  *  After finding a match, it resets the file position to the beginning
  *  of the record found.
  *  @param[in] io  A file object.
  *  @param[in] searchMax  How many bytes to search.
- *  @return EVT_SEARCH_HEADER, EVT_SEARCH_RECORD, EVT_SEARCH_FAIL, EVT_ERROR_IO
+ *  @param[out] result  Search result.
+ *  @return EVT_OK, EVT_ERROR_IO
  */
-int evtIOSearch (FileIO *io, off_t searchMax);
+EvtError evtIOSearch (FileIO *io, off_t searchMax, EvtSearchResult *result);
 
 /** Basic errors within the EVT header. */
 enum EvtHeaderError
@@ -331,39 +347,41 @@ enum EvtHeaderError
  *  @param[out] errors  Any concrete errors for EVT_ERROR.
  *  @return EVT_OK, EVT_ERROR, EVT_ERROR_IO
  */
-int evtIOReadHeader (FileIO *__restrict io, EvtHeader *__restrict hdr,
-	enum EvtHeaderError *__restrict errors);
+EvtError evtIOReadHeader (FileIO *restrict io, EvtHeader *restrict hdr,
+	enum EvtHeaderError *restrict errors);
+
+/* TODO: Pro funkce nahoře s enumama udělat nějakej překlad na text. */
 
 
 /* ===== High-level Interface ============================================== */
 
-/* TODO: Pro funkce nahoře s enumama udělat nějakej překlad na text. */
-/* TODO: Udělat dobře celej tenhle návrh. Implementovat to je pak hračka. */
-
 /** Event log file object. */
 typedef struct
 {
-	/** Interface for the underlying file. */
-	FileIO *io;
-	/** Information about the log. */
-	EvtHeader header;
-	/** Some changes took place. */
-	unsigned changed : 1;
+	FileIO *io;                    /** Interface for the underlying file. */
+	EvtHeader header;              /** Information about the log. */
+
+	unsigned changed         : 1;  /** Some changes have taken place. */
+	unsigned firstRecordRead : 1;  /** @a firstRecordLen is valid. */
+
+	uint32_t firstRecordLen;       /** Length of the first record. */
+	off_t length;                  /** Length of the log file. */
 
 #if 0
-	/** Information on the last EVT_ERROR. */
+	/** TODO: Information on the last EVT_ERROR. */
 	char *lastError;
 #endif
 }
 EvtLog;
 
 /** Create a new EVT file object, use the present header.
+ *  The log will be positioned at the first record in it.
  *  @param[out] log  The log object.
  *  @param[in] io  Underlying file.
  *  @param[out] errorInfo  Describes errors in the header if failed.
  *  @return EVT_OK, EVT_ERROR, EVT_ERROR_IO
  */
-int evtOpen (EvtLog *__restrict *log, FileIO *__restrict io,
+EvtError evtOpen (EvtLog *restrict *log, FileIO *restrict io,
 	enum EvtHeaderError *errorInfo);
 
 /** Create a new EVT file object, initialize a new header and reset the file.
@@ -372,14 +390,14 @@ int evtOpen (EvtLog *__restrict *log, FileIO *__restrict io,
  *  @param[out] logSize  Size of the log file.
  *  @return EVT_OK, EVT_ERROR_IO
  */
-int evtOpenCreate (EvtLog *__restrict *log, FileIO *__restrict io,
+EvtError evtOpenCreate (EvtLog *restrict *log, FileIO *restrict io,
 	uint32_t size);
 
 /** Write anything we have to write and destroy the object.
  *  @param[in] log  A log file object.
  *  @return EVT_OK, EVT_ERROR_IO
  */
-int evtClose (EvtLog *log);
+EvtError evtClose (EvtLog *log);
 
 /** Return the header for the log.
  *  @param[in] log  A log file object.
@@ -391,29 +409,23 @@ const EvtHeader *evtGetHeader (EvtLog *log);
  *  @param[in] log  A log file object.
  *  @return EVT_OK, EVT_ERROR_IO
  */
-int evtRewind (EvtLog *log);
-
-/** Reading has reached the end of log. */
-#define EVT_READ_EOF 1
+EvtError evtRewind (EvtLog *log);
 
 /** Read a record and advance to the next one.
  *  @param[in] log  A log file object.
  *  @param[out] record  Data related to the record.
- *  @return EVT_READ_EOF, EVT_OK, EVT_ERROR, EVT_ERROR_IO
+ *  @return EVT_OK, EVT_ERROR, EVT_ERROR_IO, EVT_ERROR_EOF
  */
-int evtReadRecord (EvtLog *log, EvtRecordData *record);
-
-/** There's no free place to write the record. */
-#define EVT_APPEND_FULL 1
+EvtError evtReadRecord (EvtLog *restrict log, EvtRecordData *restrict record);
 
 /** Set the position in the file to the end and try to write a record.
  *  @param[in] log  A log file object.
  *  @param[in] record  A record to be written.
  *  @param[in] overwrite  Try to overwrite old records if not enough space.
- *  @return EVT_APPEND_FULL, EVT_OK, EVT_ERROR_IO
+ *  @return EVT_OK, EVT_ERROR, EVT_ERROR_IO, EVT_ERROR_LOG_FULL
  */
-int evtAppendRecord (EvtLog *log, const EvtRecordData *record,
-	unsigned overwrite);
+EvtError evtAppendRecord (EvtLog *restrict log,
+	const EvtRecordData *restrict record, unsigned overwrite);
 
 
 #endif /* ! __EVT_H__ */

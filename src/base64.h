@@ -67,16 +67,16 @@ void base64_init_decodestate (base64_decodestate *state_in);
 void base64_init_encodestate (base64_encodestate *state_in);
 
 /** Decode a block of base64 encoded data. */
-int base64_decode_block (const char *__restrict code_in, const int length_in,
-	char *__restrict plaintext_out, base64_decodestate *__restrict state_in);
+int base64_decode_block (const char *restrict code_in, const int length_in,
+	char *restrict plaintext_out, base64_decodestate *restrict state_in);
 
 /** Encode a block of data into base64. */
-int base64_encode_block (const char *__restrict plaintext_in, int length_in,
-	char *__restrict code_out, base64_encodestate *__restrict state_in);
+int base64_encode_block (const char *restrict plaintext_in, int length_in,
+	char *restrict code_out, base64_encodestate *restrict state_in);
 
 /** Finish base64 encoding. */
 int base64_encode_blockend
-	(char *__restrict code_out, base64_encodestate *__restrict state_in);
+	(char *restrict code_out, base64_encodestate *restrict state_in);
 
 #endif /* ! __BASE64_H__ */
 

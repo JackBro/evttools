@@ -58,8 +58,8 @@ static inline void bufferInit (Buffer *buf)
  *                    on the specified boundary. Any padding will be zeroed.
  *  @return The offset at which the data have been pasted into the buffer.
  */
-int bufferAppend (Buffer *__restrict buf,
-	const void *__restrict data, size_t length, size_t align);
+int bufferAppend (Buffer *restrict buf,
+	const void *restrict data, size_t length, size_t align);
 
 /** Append a character to a @a Buffer object.
  *  @param[in,out] buf  A buffer object.

@@ -17,7 +17,7 @@
 #include "fileio.h"
 
 
-/* XXX: These -o functions are not available everywhere. */
+/* FIXME: These -o functions are not available everywhere. */
 /* TODO: Maybe move the corresponding parts of config.h in here. */
 
 /** A portable handler to get the position in a stdio FILE. */
@@ -37,7 +37,7 @@ fileIOSeek (void *handle, off_t offset, int whence)
 }
 
 /** A portable handler to get the length of a stdio FILE. */
-static int64_t
+static off_t
 fileIOLength (void *handle)
 {
 	assert (handle != NULL);
@@ -46,7 +46,7 @@ fileIOLength (void *handle)
 
 /** A portable handler to set the length of a stdio FILE. */
 static int
-fileIOTruncate (void *handle, int64_t length)
+fileIOTruncate (void *handle, off_t length)
 {
 	assert (handle != NULL);
 	return ftruncate (fileno ((FILE *) handle), length);
@@ -60,13 +60,19 @@ fileIONewForHandle (FILE *file)
 
 	assert (file != NULL);
 
-	io = xmalloc (sizeof (FileIO));
-	io->handle = file;
-	io->tell = fileIOTell;
-	io->seek = fileIOSeek;
-	io->read = (FileIORead) fread;
-	io->write = (FileIOWrite) fwrite;
-	io->length = fileIOLength;
+	io = xmalloc (sizeof *io);
+	io->handle   = file;
+	io->tell     = fileIOTell;
+	io->seek     = fileIOSeek;
+	io->read     = (FileIORead) fread;
+	io->write    = (FileIOWrite) fwrite;
+	io->length   = fileIOLength;
 	io->truncate = fileIOTruncate;
 	return io;
+}
+
+void
+fileIOFree (FileIO *io)
+{
+	free (io);
 }

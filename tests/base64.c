@@ -16,7 +16,8 @@
 #include <src/base64.h>
 
 /** Encode a string and decode it back again. */
-int tests_base64 (int argc, char *argv[])
+int
+tests_base64 (int argc, char *argv[])
 {
 	const char string[] = "Příliš žluťoučký kůň úpěl ďábelské ódy.";
 	int fail = 0;

@@ -9,7 +9,6 @@
 
 #include <stddef.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
@@ -23,7 +22,7 @@
 #include "datastruct.h"
 
 
-/** Many values are aligned at this DWORD boundary. */
+/** Many values are aligned at DWORD boundary. */
 #define SIZEOF_DWORD 4
 
 
@@ -83,34 +82,27 @@ typedef struct
 	/** The beginning size of the EOF record. This value is always 0x28. */
 	uint32_t recordSizeBeginning;
 	/** An identifier that helps to differentiate this record from other
-	 *  records in the event log. The value is always set to 0x11111111.
-	 */
+	 *  records in the event log. The value is always set to 0x11111111. */
 	uint32_t one;
 	/** An identifier that helps to differentiate this record from other
-	 *  records in the event log. The value is always set to 0x22222222.
-	 */
+	 *  records in the event log. The value is always set to 0x22222222. */
 	uint32_t two;
 	/** An identifier that helps to differentiate this record from other
-	 *  records in the event log. The value is always set to 0x33333333.
-	 */
+	 *  records in the event log. The value is always set to 0x33333333. */
 	uint32_t three;
 	/** An identifier that helps to differentiate this record from other
-	 *  records in the event log. The value is always set to 0x44444444.
-	 */
+	 *  records in the event log. The value is always set to 0x44444444. */
 	uint32_t four;
 	/** The offset to the oldest record. If the event log is empty,
-	 *  this is set to the start of this structure.
-	 */
+	 *  this is set to the start of this structure. */
 	uint32_t beginRecord;
 	/** The offset to the start of this structure. */
 	uint32_t endRecord;
 	/** The record number of the next event that will be written
-	 *  to the event log.
-	 */
+	 *  to the event log. */
 	uint32_t currentRecordNumber;
 	/** The record number of the oldest record in the event log.
-	 *  The record number will be 0 if the event log is empty.
-	 */
+	 *  The record number will be 0 if the event log is empty. */
 	uint32_t oldestRecordNumber;
 	/** The ending size of the EvtEOF. This value is always 0x28. */
 	uint32_t recordSizeEnd;
@@ -128,16 +120,8 @@ typedef struct
 EvtTableItem;
 
 
-static int evtRead (FileIO *__restrict io,
-	const EvtTableItem *__restrict table, void *__restrict base,
-	int itemIndex, int itemCount);
-static int evtWrite (FileIO *__restrict io,
-	const EvtTableItem *__restrict table, const void *__restrict base);
-
-
-
 /** Table for EVT header records. */
-static EvtTableItem evtHeaderTable[] =
+static const EvtTableItem evtHeaderTable[] =
 {
 	EVT_TABLE_ITEM (EvtHeader, headerSize),
 	EVT_TABLE_ITEM (EvtHeader, signature),
@@ -155,7 +139,7 @@ static EvtTableItem evtHeaderTable[] =
 };
 
 /** Table for EVT records. */
-static EvtTableItem evtRecordTable[] =
+static const EvtTableItem evtRecordTable[] =
 {
 	EVT_TABLE_ITEM (EvtRecordHeader, length),
 	EVT_TABLE_ITEM (EvtRecordHeader, reserved),
@@ -177,7 +161,7 @@ static EvtTableItem evtRecordTable[] =
 };
 
 /** Table for EVT EOF record. */
-static EvtTableItem evtEOFTable[] =
+static const EvtTableItem evtEOFTable[] =
 {
 	EVT_TABLE_ITEM (EvtEOF, recordSizeBeginning),
 	EVT_TABLE_ITEM (EvtEOF, one),
@@ -201,18 +185,18 @@ static EvtTableItem evtEOFTable[] =
  *  @param[in] itemIndex  The index of the first item to read.
  *  @param[in] itemCount  Number of items to read. Use -1 for all items.
  */
-static int
-evtRead (FileIO *__restrict io,
-	const EvtTableItem *__restrict table, void *__restrict base,
+static EvtError
+evtRead (FileIO *restrict io,
+	const EvtTableItem *restrict table, void *restrict base,
 	int itemIndex, int itemCount)
 {
 	uint8_t buffer[8];
 	void *ptr;
 	const EvtTableItem *item;
 
-	assert (io != NULL);
+	assert (io    != NULL);
 	assert (table != NULL);
-	assert (base != NULL);
+	assert (base  != NULL);
 	assert (itemIndex >= 0);
 
 	for (item = table + itemIndex; item->length && itemCount--; item++)
@@ -225,6 +209,7 @@ evtRead (FileIO *__restrict io,
 		{
 		case 1:
 			*((uint8_t *)  ptr) = *buffer;
+			break;
 		case 2:
 			*((uint16_t *) ptr) = EVT_READ_WORD_LE  (buffer);
 			break;
@@ -235,7 +220,7 @@ evtRead (FileIO *__restrict io,
 			*((uint64_t *) ptr) = EVT_READ_QWORD_LE (buffer);
 			break;
 		default:
-			return EVT_ERROR;
+			assert (0);
 		}
 	}
 	return EVT_OK;
@@ -247,24 +232,24 @@ evtRead (FileIO *__restrict io,
  *  @param[out] base  Points to the beginning of a structure
  *                    that contains the data to be written.
  */
-static int
-evtWrite (FileIO *__restrict io,
-	const EvtTableItem *__restrict table, const void *__restrict base)
+static EvtError
+evtWrite (FileIO *restrict io,
+	const EvtTableItem *restrict table, const void *restrict base)
 {
 	uint8_t buffer[8];
 	const void *ptr;
 	const EvtTableItem *item;
 
-	assert (io != NULL);
+	assert (io    != NULL);
 	assert (table != NULL);
-	assert (base != NULL);
+	assert (base  != NULL);
 
 	for (item = table; item->length; item++)
 	{
 		ptr = (char *) base + item->offset;
 		switch (item->length)
 		{
-			uint16_t word;
+			uint16_t  word;
 			uint32_t dword;
 			uint64_t qword;
 
@@ -274,19 +259,19 @@ evtWrite (FileIO *__restrict io,
 		case 2:
 			word      = *(uint16_t *) ptr;
 			buffer[0] = (word)        & 0xFF;
-			buffer[1] = (word >> 8)   & 0xFF;
+			buffer[1] = (word  >>  8) & 0xFF;
 			break;
 		case 4:
 			dword     = *(uint32_t *) ptr;
 			buffer[0] = (dword)       & 0xFF;
-			buffer[1] = (dword >> 8)  & 0xFF;
+			buffer[1] = (dword >>  8) & 0xFF;
 			buffer[2] = (dword >> 16) & 0xFF;
 			buffer[3] = (dword >> 24) & 0xFF;
 			break;
 		case 8:
 			qword     = *(uint64_t *) ptr;
 			buffer[0] = (qword)       & 0xFF;
-			buffer[1] = (qword >> 8)  & 0xFF;
+			buffer[1] = (qword >>  8) & 0xFF;
 			buffer[2] = (qword >> 16) & 0xFF;
 			buffer[3] = (qword >> 24) & 0xFF;
 			buffer[4] = (qword >> 32) & 0xFF;
@@ -295,7 +280,7 @@ evtWrite (FileIO *__restrict io,
 			buffer[7] = (qword >> 56) & 0xFF;
 			break;
 		default:
-			return EVT_ERROR;
+			assert (0);
 		}
 
 		if (FILE_IO_WRITE (buffer, item->length, 1, io) < 1)
@@ -305,19 +290,34 @@ evtWrite (FileIO *__restrict io,
 }
 
 
+/* ===== Errors ============================================================ */
+
+const char *evtXlateError (EvtError error)
+{
+	switch (error)
+	{
+	case EVT_OK:              return _("No error");
+	default:
+	case EVT_ERROR:           return _("General error");
+	case EVT_ERROR_IO:        return _("Input/output error");
+	case EVT_ERROR_EOF:       return _("End of file reached");
+	case EVT_ERROR_LOG_FULL:  return _("The log is full");
+	}
+}
+
+
 /* ===== Data manipulation ================================================= */
 
-int
-evtDecodeRecordData (const EvtRecordData *__restrict input,
-	EvtRecordContents *__restrict output,
-	enum EvtDecodeError *__restrict errors)
+EvtError
+evtDecodeRecordData (const EvtRecordData *restrict input,
+	EvtRecordContents *restrict output, EvtDecodeError *restrict errors)
 {
-	enum EvtDecodeError errs = 0;
+	EvtDecodeError errs = 0;
+	const EvtRecordHeader *hdr;
 	int length;
 	char *s;
-	const EvtRecordHeader *hdr;
 
-	assert (input != NULL);
+	assert (input  != NULL);
 	assert (output != NULL);
 
 	if (!input->data || input->dataLength
@@ -332,7 +332,7 @@ evtDecodeRecordData (const EvtRecordData *__restrict input,
 	hdr = &input->header;
 
 	/* time_t should represent the number of seconds elapsed since 1970.
-	 * This value has to be converted on systems where it's not true.
+	 * This value has to be converted on systems where that's not true.
 	 */
 	output->timeGenerated = (time_t) hdr->timeGenerated;
 	output->timeWritten   = (time_t) hdr->timeWritten;
@@ -404,7 +404,7 @@ evtDecodeRecordData (const EvtRecordData *__restrict input,
 	{
 		output->data = xmalloc (hdr->dataLength);
 		output->dataLength = hdr->dataLength;
-		memcpy (output->data, input->data + hdr->dataOffset
+		memcpy (output->data, (const char *) input->data + hdr->dataOffset
 			- EVT_RECORD_HEADER_LENGTH, hdr->dataLength);
 	}
 
@@ -417,15 +417,23 @@ evtDecodeRecordData (const EvtRecordData *__restrict input,
 	return errs ? EVT_ERROR : EVT_OK;
 }
 
-int
-evtEncodeRecordData (const EvtRecordContents *__restrict input,
-	EvtRecordData *__restrict output,
-	enum EvtEncodeError *__restrict errors)
+EvtError
+evtEncodeRecordData (const EvtRecordContents *restrict input,
+	EvtRecordData *restrict output,
+	EvtEncodeError *restrict errors)
 {
-	enum EvtEncodeError errs = 0;
+	EvtEncodeError errs = 0;
 	Buffer data = BUFFER_INITIALIZER;
 
-	assert (input != NULL);
+	uint16_t *wideStr;
+	int i, length;
+
+	void *sid;
+	size_t sid_length;
+
+	uint8_t length_le[4];
+
+	assert (input  != NULL);
 	assert (output != NULL);
 
 	/* See the comment in evtDecodeRecordData(). */
@@ -433,9 +441,6 @@ evtEncodeRecordData (const EvtRecordContents *__restrict input,
 	output->header.timeWritten   = input->timeWritten;
 
 	/* The first two strings. */
-	uint16_t *wideStr;
-	int length;
-
 	if ((length = encodeMBString (input->sourceName,   &wideStr)))
 		bufferAppend (&data, wideStr, length, 0);
 	else
@@ -447,9 +452,6 @@ evtEncodeRecordData (const EvtRecordContents *__restrict input,
 		errs |= EVT_ENCODE_COMPUTER_NAME_FAILED;
 
 	/* The SID. */
-	void *sid;
-	size_t sid_length;
-
 	if (!input->userSid)
 	{
 		output->header.userSidLength = 0;
@@ -467,7 +469,6 @@ evtEncodeRecordData (const EvtRecordContents *__restrict input,
 		errs |= EVT_ENCODE_SID_FAILED;
 
 	/* The strings. */
-	int i;
 	output->header.stringOffset = EVT_RECORD_HEADER_LENGTH + data.used;
 	output->header.numStrings = input->numStrings;
 	for (i = 0; i < input->numStrings; i++)
@@ -500,7 +501,6 @@ evtEncodeRecordData (const EvtRecordContents *__restrict input,
 		+ sizeof (uint32_t) + SIZEOF_DWORD - 1) / SIZEOF_DWORD * SIZEOF_DWORD;
 
 	/* Append that value in little endian. */
-	uint8_t length_le[4];
 	length_le[0] =  output->header.length        & 0xFF;
 	length_le[1] = (output->header.length >>  8) & 0xFF;
 	length_le[2] = (output->header.length >> 16) & 0xFF;
@@ -525,14 +525,10 @@ evtDestroyRecordContents (EvtRecordContents *input)
 		free (input->strings);
 	}
 
-	if (input->userSid)
-		free (input->userSid);
-	if (input->sourceName)
-		free (input->sourceName);
-	if (input->computerName)
-		free (input->computerName);
-	if (input->data)
-		free (input->data);
+	if (input->userSid)       free (input->userSid);
+	if (input->sourceName)    free (input->sourceName);
+	if (input->computerName)  free (input->computerName);
+	if (input->data)          free (input->data);
 
 	memset (input, 0, sizeof *input);
 }
@@ -546,23 +542,27 @@ evtDestroyRecordData (EvtRecordData *input)
 	{
 		free (input->data);
 		input->data = NULL;
+		input->dataLength = 0;
 	}
 }
 
 
 /* ===== Low-level FileIO Interface ======================================== */
 
-int
-evtIOSearch (FileIO *io, off_t searchMax)
+EvtError
+evtIOSearch (FileIO *io, off_t searchMax, EvtSearchResult *result)
 {
 	uint8_t buffer[8];
 	off_t searched = 8;
 	uint32_t length;
 
-	assert (io != NULL);
+	assert (io     != NULL);
+	assert (result != NULL);
+
+	*result = EVT_SEARCH_FAIL;
 
 	if (searchMax < 8)
-		return EVT_SEARCH_FAIL;
+		return EVT_OK;
 	if (FILE_IO_READ (buffer, 8, 1, io) < 1)
 		return EVT_ERROR_IO;
 
@@ -581,13 +581,15 @@ evtIOSearch (FileIO *io, off_t searchMax)
 			{
 				if (FILE_IO_SEEK (io, -8, SEEK_CUR))
 					return EVT_ERROR_IO;
-				return EVT_SEARCH_HEADER;
+				*result = EVT_SEARCH_HEADER;
+				return EVT_OK;
 			}
 			if (length >= EVT_RECORD_MIN_LENGTH)
 			{
 				if (FILE_IO_SEEK (io, -8, SEEK_CUR))
 					return EVT_ERROR_IO;
-				return EVT_SEARCH_RECORD;
+				*result = EVT_SEARCH_RECORD;
+				return EVT_OK;
 			}
 		}
 
@@ -595,21 +597,22 @@ evtIOSearch (FileIO *io, off_t searchMax)
 		if (FILE_IO_READ (buffer + (searched++ & 7), 1, 1, io) < 1)
 			return EVT_ERROR_IO;
 	}
-	return EVT_SEARCH_FAIL;
+	return EVT_OK;
 }
 
-int
-evtIOReadHeader (FileIO *__restrict io, EvtHeader *__restrict hdr,
-	enum EvtHeaderError *__restrict errors)
+EvtError
+evtIOReadHeader (FileIO *restrict io, EvtHeader *restrict hdr,
+	enum EvtHeaderError *restrict errors)
 {
 	enum EvtHeaderError errs = 0;
 	off_t offset;
 
-	assert (io != NULL);
+	assert (io  != NULL);
 	assert (hdr != NULL);
 
 	if ((offset = FILE_IO_TELL (io)) == -1)
 		return EVT_ERROR_IO;
+	/* FIXME: Return ERROR_IO? */
 	if (evtRead (io, evtHeaderTable, hdr, 0, -1))
 		return EVT_ERROR;
 
@@ -633,18 +636,26 @@ evtIOReadHeader (FileIO *__restrict io, EvtHeader *__restrict hdr,
 
 /* ===== High-level Interface ============================================== */
 
+#define GET_OFFSET                                                            \
+	do {                                                                      \
+		offset = FILE_IO_TELL (log->io);                                      \
+		if (offset == -1)                                                     \
+			return EVT_ERROR_IO;                                              \
+	} while (0)
+
 /** Position in the log file. */
-enum EvtReposition
+typedef enum
 {
 	EVT_REPOSITION_HEADER,        /**< Before the header. */
 	EVT_REPOSITION_PAST_HEADER,   /**< Past the header. */
 	EVT_REPOSITION_FIRST,         /**< First record. */
 	EVT_REPOSITION_EOF            /**< Where the EOF record should be. */
-};
+}
+EvtReposition;
 
 /** Move to another location within the log file. */
-static int
-evtReposition (EvtLog *log, enum EvtReposition where)
+static EvtError
+evtReposition (EvtLog *log, EvtReposition where)
 {
 	off_t offset;
 
@@ -665,25 +676,12 @@ evtReposition (EvtLog *log, enum EvtReposition where)
 		offset = log->header.endOffset;
 		break;
 	default:
-		return EVT_ERROR;
+		assert (0);
 	}
 
 	if (FILE_IO_SEEK (log->io, offset, SEEK_SET))
 		return EVT_ERROR_IO;
 	return EVT_OK;
-}
-
-/** Writes out the header at the current position.
- *  @param[in] log  A log file object.
- *  @return EVT_OK, EVT_ERROR, EVT_ERROR_IO
- */
-static int
-evtWriteHeader (EvtLog *log)
-{
-	assert (log != NULL);
-
-	evtReposition (log, EVT_REPOSITION_HEADER);
-	return evtWrite (log->io, evtHeaderTable, &log->header);
 }
 
 /** Initialize the header for an empty log. */
@@ -692,307 +690,58 @@ evtInitializeHeader (EvtHeader *header, uint32_t size)
 {
 	assert (header != NULL);
 
-	header->headerSize = EVT_HEADER_LENGTH;
-	header->signature = EVT_SIGNATURE;
-	header->majorVersion = 1;
-	header->minorVersion = 1;
-	header->startOffset = EVT_HEADER_LENGTH;
-	header->endOffset = EVT_HEADER_LENGTH;
-	header->currentRecordNumber = 1;
-	header->oldestRecordNumber = 0;
-	header->maxSize = size;
-	header->flags = 0;
-	header->retention = 0;
+	header->headerSize    = EVT_HEADER_LENGTH;
 	header->endHeaderSize = EVT_HEADER_LENGTH;
+	header->signature     = EVT_SIGNATURE;
+	header->majorVersion  = 1;
+	header->minorVersion  = 1;
+	header->startOffset   = EVT_HEADER_LENGTH;
+	header->endOffset     = EVT_HEADER_LENGTH;
+	header->currentRecordNumber = 1;
+	header->oldestRecordNumber  = 0;
+	header->maxSize       = size;
+	header->flags         = 0;
+	header->retention     = 0;
 }
 
-
-#if 0
-
-/** Write the EOF record according to information in the header.
- *  @param[in] log  A log file object.
- *  @return EVT_ERROR_IO
- */
-int evtWriteEOF (EvtLog *log);
-
-
-EvtLog *
-evtNew (FileIO *io)
-{
-	EvtLog *log;
-
-	assert (io != NULL);
-
-	log = xmalloc (sizeof *log);
-	log->io = io;
-//	log->offset = 0;
-//	log->state = 0;
-	return log;
-}
-
-int
-evtAppendRecord (EvtLog *log, const EvtRecordData *record)
+/** Write out the header. */
+static EvtError
+evtWriteHeader (EvtLog *log)
 {
 	assert (log != NULL);
-	assert (record != NULL);
 
-	if (evtWrite (log->io, evtRecordTable, &record->header))
-		return EVT_ERROR;
-
-#ifdef HAKUNAMATATA
-	long offset;
-
-	/* The record has to be aligned on a DWORD (4-byte) boundary. */
-	offset = bufferAppend (ctx->nonFixed, NULL, sizeof (ctx->rec->length), 4);
-	*(uint32_t *) ((char *) ctx->nonFixed->data + offset) = ctx->rec->length
-		= sizeof (EvtRecord) + ctx->nonFixed->used;
-
-	offset = xftell (ctx->output);
-
-	/* Write the record. */
-	if (writeBlock (ctx, ctx->rec, sizeof (EvtRecord), 0)
-		|| writeBlock (ctx, ctx->nonFixed->data, ctx->nonFixed->used, 1))
-		exit (EXIT_FAILURE);
-
-	if (!ctx->firstRecRead)
-	{
-		ctx->firstRecRead = 1;
-		ctx->firstRecLength = ctx->rec->length;
-		ctx->hdr->oldestRecordNumber = ctx->rec->recordNumber;
-		ctx->eof->oldestRecordNumber = ctx->rec->recordNumber;
-		ctx->hdr->startOffset = offset;
-		ctx->eof->beginRecord = offset;
-	}
-	ctx->hdr->currentRecordNumber = ctx->rec->recordNumber + 1;
-	ctx->eof->currentRecordNumber = ctx->rec->recordNumber + 1;
-#endif /* HAKUNAMATATA */
-
-	/* TODO */
-	return -1;
+	evtReposition (log, EVT_REPOSITION_HEADER);
+	return evtWrite (log->io, evtHeaderTable, &log->header);
 }
 
-int
-evtWriteEOF (EvtLog *log)
-{
-	EvtEOF eof;
-
-	assert (log != NULL);
-
-	eof.recordSizeBeginning = EVT_EOF_LENGTH;
-	eof.one = 0x11111111;
-	eof.two = 0x22222222;
-	eof.three = 0x33333333;
-	eof.four = 0x44444444;
-	eof.beginRecord = log->header.startOffset;
-	eof.endRecord = log->header.endOffset;
-	eof.currentRecordNumber = log->header.currentRecordNumber;
-	eof.oldestRecordNumber = log->header.oldestRecordNumber;
-	eof.recordSizeEnd = EVT_EOF_LENGTH;
-
-	/* TODO: */
-	if (evtWrite (log->io, evtEOFTable, &eof))
-		return EVT_ERROR;
-
-#ifdef HAKUNAMATATA
-			/* TODO: Probably move to writeBlock. */
-			ctx.hdr->endOffset = ctx.eof->endRecord = xftell (output);
-
-			/* Write the EOF record and the header. */
-			writeBlock (&ctx, &eof, sizeof (EvtEOF), 0);
-			xfseek (output, 0, SEEK_SET);
-			fwrite (&hdr, sizeof hdr, 1, output);
-#endif /* HAKUNAMATATA */
-
-	return -1;
-}
-
-#ifdef HAKUNAMATATA
-
-/** Get more space in the log file by deleting records from the beginning.
- *  This function might reposition @a fp and eat your hamster.
- *  @param[in,out] ctx  A conversion context to work with.
- *  @param[in] newRecordOffset  The offset of the record for which we are
- *                              trying to get some space.
- *  @return 0 if it was successful, -1 if it was not.
- */
-/* If we have wrapped, we'll likely be overwritting our previous
- * records. In that case, we have to advance startOffset and update
- * oldestRecordNumber with the recordNumber of this next item.
- */
-static int
-getMoreSpace (ConvCtx *ctx, long newRecordOffset)
-{
-	EvtRecord hdr;
-	long endSpace;
-
-	/* Not possible. */
-	if (!ctx->hdr->oldestRecordNumber)
-		return -1;
-
-	ctx->tailSpace += ctx->firstRecLength;
-
-	/* We have to overwrite our only record. */
-	if (ctx->hdr->oldestRecordNumber == ctx->hdr->currentRecordNumber)
-	{
-		ctx->firstRecRead = 0;
-		ctx->firstRecLength = 0;
-		ctx->hdr->oldestRecordNumber = 0;
-		ctx->eof->oldestRecordNumber = 0;
-
-		/* If it is the EOF record that has to overwrite this record,
-		 * this sets the startOffset and beginRecord values to be correct.
-		 */
-		ctx->hdr->startOffset = ctx->eof->beginRecord = newRecordOffset;
-		return 0;
-	}
-
-	/* How much space remains after the current first record. */
-	endSpace = ctx->hdr->maxSize - ctx->hdr->startOffset - ctx->firstRecLength;
-
-	/* The current first record is wrapped. */
-	if (endSpace < 0)
-		ctx->hdr->startOffset = sizeof (EvtHeader) - endSpace;
-	/* No space for another record behind the current first record. */
-	else if (endSpace < (signed) sizeof (EvtRecord))
-	{
-		/* We must go to the start of the file. */
-		ctx->tailSpace += endSpace;
-		ctx->hdr->startOffset = sizeof (EvtHeader);
-	}
-	/* We may simply advance the start offset. */
-	else
-		ctx->hdr->startOffset += ctx->firstRecLength;
-
-	ctx->eof->beginRecord = ctx->hdr->startOffset;
-
-	/* Read the header of the next record. */
-	xfseek (ctx->output, ctx->hdr->startOffset, SEEK_SET);
-	if (!fread (&hdr, sizeof (EvtRecord), 1, ctx->output))
-		return -1;
-
-	ctx->firstRecLength = hdr.length;
-	ctx->hdr->oldestRecordNumber = hdr.recordNumber;
-	ctx->eof->oldestRecordNumber = hdr.recordNumber;
-	return 0;
-}
-
-
-/** Writes a block of data into a log file.
- *  @param[in] ctx  A conversion context.
- *  @param[in] fp  The log file.
- *  @param[in] data  The data.
- *  @param[in] length  The length of @a data in bytes.
- *  @param[in] maySplit  Whether the block may be split.
- */
-static int writeBlock (ConvCtx *ctx, const void *data, size_t length,
-	int maySplit)
-{
-	/* Unused bytes at the end: 0x00000027 in LE. */
-	static const char unused[4] = {0x27, 0x00, 0x00, 0x00};
-	long offset, endSpace, reqLength, i;
-	enum
-	{
-		/* No wrapping needs to be handled. */
-		CSV2EVT_WRITEBLOCK_NO_WRAP,
-		/* Split the block. */
-		CSV2EVT_WRITEBLOCK_SPLIT,
-		/* Fill the unused space and write the block after the header. */
-		CSV2EVT_WRITEBLOCK_START
-	}
-	action;
-
-	offset = xftell (ctx->output);
-	endSpace = ctx->hdr->maxSize - offset;
-	if (endSpace < 0)
-	{
-		fputs (_("Error: We've got past the end of log file."), stderr);
-		return -1;
-	}
-
-	reqLength = length;
-	if ((unsigned) endSpace < length)
-	{
-		ctx->hdr->flags |= EVT_HEADER_WRAP;
-
-		if (maySplit)
-			action = CSV2EVT_WRITEBLOCK_SPLIT;
-		else
-		{
-			reqLength += endSpace;
-			action = CSV2EVT_WRITEBLOCK_START;
-		}
-	}
-	else
-		action = CSV2EVT_WRITEBLOCK_NO_WRAP;
-
-	while (ctx->tailSpace < reqLength)
-	{
-		if (getMoreSpace (ctx, offset))
-		{
-			fputs (_("Error: Failed to write a record; not enough space."),
-				stderr);
-			return -1;
-		}
-	}
-	xfseek (ctx->output, offset, SEEK_SET);
-
-	/* We've got enough space, we may write the block. */
-	switch (action)
-	{
-	case CSV2EVT_WRITEBLOCK_SPLIT:
-		fwrite (data, endSpace, 1, ctx->output);
-		xfseek (ctx->output, sizeof (EvtHeader), SEEK_SET);
-		fwrite ((char *) data + endSpace, length - endSpace, 1, ctx->output);
-		break;
-
-	case CSV2EVT_WRITEBLOCK_START:
-		for (i = 0; i < endSpace; i++)
-			fputc (unused[i & 3], ctx->output);
-
-		xfseek (ctx->output, sizeof (EvtHeader), SEEK_SET);
-
-	case CSV2EVT_WRITEBLOCK_NO_WRAP:
-		fwrite (data, length, 1, ctx->output);
-	}
-
-	ctx->tailSpace -= reqLength;
-	return 0;
-}
-
-#endif /* HAKUNAMATATA */
-
-
-#ifdef HAKUNAMATATA
-	if (hdr.flags & EVT_HEADER_DIRTY)
-		fputs (_("Warning: The log file is marked dirty.\n"), stderr);
-	wraps = hdr.flags & EVT_HEADER_WRAP;
-
-	if (fseek (input, hdr.startOffset, SEEK_SET))
-	{
-		fprintf (stderr, _("Error: fseek: %s.\n"), strerror(errno));
-		return -1;
-	}
-
-#endif /* HAKUNAMATATA */
-
-#endif
-
-
-int
-evtOpen (EvtLog *__restrict *log, FileIO *__restrict io,
+EvtError
+evtOpen (EvtLog *restrict *log, FileIO *restrict io,
 	enum EvtHeaderError *errorInfo)
 {
 	EvtLog *new_log;
-	int err;
+	off_t length;
+	EvtError err;
 
 	assert (log != NULL);
-	assert (io != NULL);
+	assert (io  != NULL);
+
+	length = FILE_IO_LENGTH (io);
+	if (length == -1)
+		return EVT_ERROR_IO;
+	if (length < EVT_HEADER_LENGTH)
+		return EVT_ERROR;
 
 	new_log = xmalloc (sizeof *new_log);
 	new_log->io = io;
 	new_log->changed = 0;
+	new_log->firstRecordRead = 0;
+	new_log->length = length;
 
-	if ((err = evtIOReadHeader (io, &new_log->header, errorInfo)))
+	/* FIXME: Should probably also mark the log as dirty.
+	 *        And if not here, then in evtAppendRecord() etc.
+	 */
+	if ((err = evtIOReadHeader (io, &new_log->header, errorInfo))
+	 || (err = evtReposition (new_log, EVT_REPOSITION_FIRST)))
 	{
 		free (new_log);
 		return err;
@@ -1002,26 +751,31 @@ evtOpen (EvtLog *__restrict *log, FileIO *__restrict io,
 	return EVT_OK;
 }
 
-int
-evtOpenCreate (EvtLog *__restrict *log, FileIO *__restrict io, uint32_t size)
+EvtError
+evtOpenCreate (EvtLog *restrict *log, FileIO *restrict io, uint32_t size)
 {
 	EvtLog *new_log;
-	int err;
+	EvtError err;
 
 	assert (log != NULL);
-	assert (io != NULL);
+	assert (io  != NULL);
 
+	if (size < EVT_HEADER_LENGTH)
+		return EVT_ERROR;
 	if (FILE_IO_TRUNCATE (io, size))
 		return EVT_ERROR_IO;
 
 	new_log = xmalloc (sizeof *new_log);
 	new_log->io = io;
 	new_log->changed = 1;
+	new_log->firstRecordRead = 0;
+	new_log->length = size;
 
 	evtInitializeHeader (&new_log->header, size);
 	new_log->header.flags = EVT_HEADER_DIRTY;
 
-	if ((err = evtWriteHeader (new_log)))
+	if ((err = evtWriteHeader (new_log))
+	 || (err = evtReposition (new_log, EVT_REPOSITION_PAST_HEADER)))
 	{
 		free (new_log);
 		return err;
@@ -1029,25 +783,6 @@ evtOpenCreate (EvtLog *__restrict *log, FileIO *__restrict io, uint32_t size)
 
 	*log = new_log;
 	return EVT_OK;
-}
-
-int
-evtClose (EvtLog *log)
-{
-	int err = EVT_OK;
-
-	assert (log != NULL);
-
-	if (log->changed)
-	{
-		/* TODO: Write the EOF record. */
-
-		log->header.flags &= ~EVT_HEADER_DIRTY;
-		err = evtWriteHeader (log);
-	}
-
-	free (log);
-	return err;
 }
 
 const EvtHeader *
@@ -1057,33 +792,38 @@ evtGetHeader (EvtLog *log)
 	return &log->header;
 }
 
-int
+EvtError
 evtRewind (EvtLog *log)
 {
 	assert (log != NULL);
 	return evtReposition (log, EVT_REPOSITION_FIRST);
 }
 
-int
-evtReadRecord (EvtLog *log, EvtRecordData *record)
+EvtError
+evtReadRecord (EvtLog *restrict log, EvtRecordData *restrict record)
 {
-	int err;
+	EvtError err;
 	off_t offset;
-	int64_t length;
+	unsigned isFirst;
 
 	assert (log != NULL);
 	assert (record != NULL);
 
-	offset = FILE_IO_TELL   (log->io);
-	length = FILE_IO_LENGTH (log->io);
-
-	if (offset == -1 || length == -1)
-		return EVT_ERROR_IO;
+	GET_OFFSET;
 
 	/* XXX: How about EOF records? How are _they_ wrapped? */
-	if (length - offset < EVT_RECORD_HEADER_LENGTH)
-		if (evtReposition (log, EVT_REPOSITION_PAST_HEADER))
-			return EVT_ERROR_IO;
+	if (log->length - offset < EVT_RECORD_HEADER_LENGTH)
+	{
+		if ((err = evtReposition (log, EVT_REPOSITION_PAST_HEADER)))
+			return err;
+
+		GET_OFFSET;
+	}
+
+	if (offset == log->header.endOffset)
+		return EVT_ERROR_EOF;
+
+	isFirst = (offset == log->header.startOffset);
 
 	/* Read the length of the following record. */
 	if ((err = evtRead (log->io, evtRecordTable, &record->header, 0, 1)))
@@ -1094,69 +834,355 @@ evtReadRecord (EvtLog *log, EvtRecordData *record)
 	{
 		EvtEOF *eof;
 
-		if (evtRead (log->io, evtEOFTable, &record->header, 1, 4))
-			return EVT_ERROR;
+		if ((err = evtRead (log->io, evtEOFTable, &record->header, 1, 4)))
+			return err;
 
 		eof = (EvtEOF *) &record->header;
 		if (eof->one   == 0x11111111 && eof->two  == 0x22222222 &&
 			eof->three == 0x33333333 && eof->four == 0x44444444 &&
 			eof->recordSizeEnd == EVT_EOF_LENGTH)
-			return EVT_READ_EOF;
+			return EVT_ERROR_EOF;
 		else
 			return EVT_ERROR;
 	}
 	/* Shorter than expected for a record. */
 	else if (record->header.length < EVT_RECORD_MIN_LENGTH)
 		return EVT_ERROR;
-	/* The record overflows the file. */
-	else
-	{
-		offset = FILE_IO_TELL (log->io);
-		if (offset + record->header.length > length)
-			return EVT_ERROR;
-	}
+	/* The record is bigger than the whole log. */
+	else if (record->header.length > log->length - EVT_HEADER_LENGTH)
+		return EVT_ERROR;
 
 	/* Looks alright, let's read the rest of the header. */
 	if ((err = evtRead (log->io, evtRecordTable, &record->header, 1, -1)))
 		return err;
 
-	/* TODO: Check the record information, read the rest etc. */
+	GET_OFFSET;
 
 	record->dataLength = record->header.length - EVT_RECORD_HEADER_LENGTH;
 	record->data = xmalloc (record->dataLength);
 
-#if 0
-	/* FIXME: These functions are not checked for errors. */
-	if (wraps)
+	/* The record goes beyond the end of the log file. */
+	if (offset + record->dataLength > log->length)
 	{
-		offset = FILE_IO_TELL (log->io);
-		if (offset + record->dataLength > length)
+		if (log->header.flags & EVT_HEADER_WRAP)
 		{
-			log->io->read (record->data, length - offset, 1, log->io->handle);
+			if (FILE_IO_READ (record->data,
+				log->length - offset, 1, log->io) < 1)
+				goto evtReadRecord_io_fail;
 			/* Wrap around the end of file and read the rest. */
-			evtReposition (log, EVT_REPOSITION_PAST_HEADER);
-			log->io->read (record->data, record->dataLength
-				- (length - offset), 1, log->io->handle);
+			if ((err = evtReposition (log, EVT_REPOSITION_PAST_HEADER)))
+				goto evtReadRecord_fail;
+			if (FILE_IO_READ (record->data,
+				record->dataLength - (log->length - offset), 1, log->io) < 1)
+				goto evtReadRecord_io_fail;
 		}
 		else
-			log->io->read (record->data, record->dataLength, 1, log->io->handle);
+		{
+			/* The log file is probably damaged. */
+			err = EVT_ERROR;
+			goto evtReadRecord_fail;
+		}
+	}
+	else if (FILE_IO_READ (record->data, record->dataLength, 1, log->io) < 1)
+		goto evtReadRecord_io_fail;
+
+	if (isFirst)
+	{
+		log->firstRecordRead = 1;
+		log->firstRecordLen = record->header.length;
+	}
+
+	return EVT_OK;
+
+evtReadRecord_io_fail:
+	err = EVT_ERROR_IO;
+
+evtReadRecord_fail:
+	free (record->data);
+	record->data = NULL;
+	record->dataLength = 0;
+
+	return err;
+}
+
+/** Delete the first record in the log. */
+static EvtError
+evtDeleteFirst (EvtLog *log)
+{
+	EvtRecordHeader hdr;
+	int64_t endSpace;
+	EvtError err;
+
+	/* Not possible. */
+	/* XXX: Possibly rather check startOffset against endOffset. */
+	if (!log->header.oldestRecordNumber)
+		return EVT_ERROR;
+
+	if (!log->firstRecordRead)
+	{
+		/* Read the header of the first record. */
+		if ((err = evtReposition (log, EVT_REPOSITION_FIRST))
+		 || (err = evtRead (log->io, evtRecordTable, &hdr, 0, -1)))
+			return err;
+
+		log->firstRecordLen = hdr.length;
+	}
+
+	/* How much space remains after the current first record. */
+	endSpace = log->length - log->header.startOffset - log->firstRecordLen;
+
+	if (endSpace < 0)
+		/* The current first record is wrapped. */
+		log->header.startOffset = EVT_HEADER_LENGTH - endSpace;
+	else if (endSpace < EVT_RECORD_HEADER_LENGTH)
+		/* No space for another record behind the current first record.
+		 * We must go to the start of the file.
+		 * XXX: May there be an EOF record, which fits in this smaller space?
+		 */
+		log->header.startOffset = EVT_HEADER_LENGTH;
+	else
+		/* We may simply advance the start offset. */
+		log->header.startOffset += log->firstRecordLen;
+
+	/* Reconstruct header information. */
+	if (log->header.startOffset == log->header.endOffset)
+	{
+		log->header.oldestRecordNumber = 0;
+		log->firstRecordRead = 0;
 	}
 	else
-		log->io->read (record->data, record->dataLength, 1, log->io->handle);
+	{
+		/* Read the header of the new first record. */
+		if ((err = evtReposition (log, EVT_REPOSITION_FIRST))
+		 || (err = evtRead (log->io, evtRecordTable, &hdr, 0, -1)))
+			return err;
 
-	if (err)
-		free (record->data);
-#endif
+		log->header.oldestRecordNumber = hdr.recordNumber;
+		log->firstRecordLen = hdr.length;
+		log->firstRecordRead = 1;
+	}
 
 	return EVT_OK;
 }
 
-int
+/** Prepare the log for a write of size @a size. */
+static EvtError
+evtPrepareWrite (EvtLog *log, uint32_t size)
+{
+	EvtError err;
+
+	if (log->header.endOffset >= log->length - EVT_RECORD_HEADER_LENGTH)
+		size += log->length - log->header.endOffset;
+
+	while (1)
+	{
+		uint32_t space;
+
+		/* Compute how much free space we effectively have right now. */
+		if (log->header.startOffset > log->header.endOffset)
+			space = log->header.startOffset - log->header.endOffset;
+		else
+			space = (log->header.startOffset - EVT_HEADER_LENGTH)
+				+ (log->length - log->header.endOffset);
+
+		if (space >= size)
+			break;
+		if ((err = evtDeleteFirst (log)))
+			return err;
+	}
+
+	/* The log is empty, makes no sense to write from the middle of it. */
+	if (!log->header.oldestRecordNumber)
+	{
+		log->header.startOffset =
+		log->header.endOffset = EVT_HEADER_LENGTH;
+		log->header.flags &= ~EVT_HEADER_WRAP;
+	}
+	else if (log->header.endOffset >= log->length - EVT_RECORD_HEADER_LENGTH)
+	{
+		/* Unused bytes at the end: 0x00000027 in LE. */
+		static const char pat[4] = {0x27, 0x00, 0x00, 0x00};
+		off_t i, offset, endSpace;
+
+		assert (log->header.startOffset <= log->header.endOffset);
+
+		/* Fill the end of the log file with the pattern. */
+		GET_OFFSET;
+		endSpace = log->length - offset;
+		for (i = 0; i < endSpace; i++)
+			if (FILE_IO_WRITE (pat + (i & 3), 1, 1, log->io) < 1)
+				return EVT_ERROR_IO;
+
+		log->header.endOffset = EVT_HEADER_LENGTH;
+		log->header.flags |= EVT_HEADER_WRAP;
+	}
+
+	if ((err = evtReposition (log, EVT_REPOSITION_EOF)))
+		return err;
+
+	return EVT_OK;
+}
+
+/** Simulate a write to the log for the purpose of checking free space. */
+static EvtError
+evtSimulateWrite (uint32_t startOffset, uint32_t *endOffset,
+	off_t length, uint32_t size)
+{
+	if (*endOffset >= length - EVT_RECORD_HEADER_LENGTH)
+	{
+		if (startOffset > *endOffset)
+			return EVT_ERROR;
+		*endOffset = EVT_HEADER_LENGTH;
+	}
+
+	/* There's just a single contiguous block available. */
+	if (startOffset > *endOffset)
+	{
+		if (startOffset - *endOffset < size)
+			return EVT_ERROR;
+	}
+	/* Otherwise handle the case where we don't fit into the first
+	 * block going from endOffset to the end of the file.
+	 */
+	else if (length - *endOffset >= size)
+	{
+		/* Write as much as we can to that block and reduce to the
+		 * case of writing from the beginning of the file.
+		 */
+		size -= length - *endOffset;
+		*endOffset = EVT_HEADER_LENGTH;
+
+		if (startOffset - EVT_HEADER_LENGTH < size)
+			return EVT_ERROR;
+	}
+
+	*endOffset += size;
+	return EVT_OK;
+}
+
+EvtError
 evtAppendRecord (EvtLog *log, const EvtRecordData *record, unsigned overwrite)
 {
-	assert (log != NULL);
+	off_t offset, recordOffset, endSpace;
+	EvtError err;
+
+	assert (log    != NULL);
 	assert (record != NULL);
 
-	/* TODO */
+	assert (record->header.length
+		== EVT_RECORD_HEADER_LENGTH + record->dataLength);
+
+	log->header.flags &= ~EVT_HEADER_LOGFULL_WRITTEN;
+
+	if (!overwrite)
+	{
+		uint32_t startOffset, endOffset;
+
+		startOffset = log->header.startOffset;
+		endOffset   = log->header.endOffset;
+
+		if (evtSimulateWrite (startOffset, &endOffset, log->length,
+			EVT_RECORD_HEADER_LENGTH + record->dataLength)
+		 || evtSimulateWrite (startOffset, &endOffset, log->length,
+			EVT_EOF_LENGTH))
+		{
+			log->header.flags |= EVT_HEADER_LOGFULL_WRITTEN;
+			return EVT_ERROR_LOG_FULL;
+		}
+	}
+
+	if ((err = evtPrepareWrite (log,
+		EVT_RECORD_HEADER_LENGTH + record->dataLength)))
+		return err;
+
+	GET_OFFSET;
+	recordOffset = offset;
+
+	if ((err = evtWrite (log->io, evtRecordTable, &record->header)))
+		return err;
+
+	/* Write the rest of the record. */
+	GET_OFFSET;
+	endSpace = log->length - offset;
+	if (endSpace >= record->dataLength)
+	{
+		if (FILE_IO_WRITE (record->data, record->dataLength, 1, log->io) < 1)
+			return EVT_ERROR_IO;
+	}
+	else
+	{
+		if (FILE_IO_WRITE (record->data, endSpace, 1, log->io) < 1)
+			return EVT_ERROR_IO;
+		if ((err = evtReposition (log, EVT_REPOSITION_PAST_HEADER)))
+			return err;
+		if (FILE_IO_WRITE ((char *) record->data + endSpace,
+			record->dataLength - endSpace, 1, log->io) < 1)
+			return EVT_ERROR_IO;
+	}
+
+	if (!log->header.oldestRecordNumber)
+	{
+		log->header.oldestRecordNumber = record->header.recordNumber;
+		log->header.startOffset = recordOffset;
+		log->firstRecordRead = 1;
+		log->firstRecordLen = record->header.length;
+	}
+
+	GET_OFFSET;
+	log->header.currentRecordNumber = record->header.recordNumber + 1;
+	log->header.endOffset = offset;
+	log->changed = 1;
+
 	return EVT_OK;
 }
+
+/** Write the EOF record according to information in the header. */
+static EvtError
+evtWriteEOF (EvtLog *log)
+{
+	EvtEOF eof;
+	EvtError err;
+
+	assert (log != NULL);
+
+	if ((err = evtPrepareWrite (log, EVT_EOF_LENGTH)))
+		return err;
+
+	/* To fix any mess evtDeleteFirst() might have made. */
+	if (!log->header.oldestRecordNumber)
+		log->header.startOffset = log->header.endOffset;
+
+	eof.recordSizeBeginning = EVT_EOF_LENGTH;
+	eof.recordSizeEnd       = EVT_EOF_LENGTH;
+	eof.one                 = 0x11111111;
+	eof.two                 = 0x22222222;
+	eof.three               = 0x33333333;
+	eof.four                = 0x44444444;
+	eof.beginRecord         = log->header.startOffset;
+	eof.endRecord           = log->header.endOffset;
+	eof.currentRecordNumber = log->header.currentRecordNumber;
+	eof.oldestRecordNumber  = log->header.oldestRecordNumber;
+
+	if ((err = evtWrite (log->io, evtEOFTable, &eof)))
+		return err;
+
+	return EVT_OK;
+}
+
+EvtError
+evtClose (EvtLog *log)
+{
+	EvtError err = EVT_OK;
+
+	assert (log != NULL);
+
+	if (log->changed && !(err = evtWriteEOF (log)))
+	{
+		log->header.flags &= ~EVT_HEADER_DIRTY;
+		err = evtWriteHeader (log);
+	}
+
+	free (log);
+	return err;
+}
+

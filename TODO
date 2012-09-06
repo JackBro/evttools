@@ -9,17 +9,10 @@
 
  - assert() function inputs etc.
     -> Don't assert errors, just what should never happen.
- - A program should be able to work without processing exceptions
+ - A program should be able to work without processing assertions.
 
  - evtdump or something like that
     -> A switch for showing just basic info
-
-    -> Ability to dump event log records from any stream
-        - The problem with wrapped records can be solved by checking
-          the record data and eventually searching for the record length
-          from the position of the header
-        - This solution however requires that the log file
-          is continuous and not fragmented or damaged
     -> Statistics - total number of records, frequency of various
        event sources and IDs, ...
 
