@@ -51,7 +51,8 @@ processRecord (const EvtRecordData *restrict data, CsvWriter restrict writer)
 	Buffer final = BUFFER_INITIALIZER;
 	EvtRecordContents contents;
 	EvtDecodeError errorInfo;
-	int error, i;
+	EvtError error;
+	unsigned i;
 
 	if ((error = evtDecodeRecordData (data, &contents, &errorInfo)))
 	{

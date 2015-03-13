@@ -426,7 +426,8 @@ evtEncodeRecordData (const EvtRecordContents *restrict input,
 	Buffer data = BUFFER_INITIALIZER;
 
 	uint16_t *wideStr;
-	int i, length;
+	int length;
+	unsigned i;
 
 	void *sid;
 	size_t sid_length;

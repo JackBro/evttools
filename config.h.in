@@ -80,7 +80,7 @@
 	#include <stdarg.h>
 
 	static int
-	__priv_snprintf (char *str, size_t size, const char *format, ...)
+	priv_snprintf (char *str, size_t size, const char *format, ...)
 	{
 		va_list pa;
 		int ret;
@@ -95,7 +95,7 @@
 	}
 
 	static inline int
-	__priv_vsnprintf (char *str, size_t size, const char *format, va_list pa)
+	priv_vsnprintf (char *str, size_t size, const char *format, va_list pa)
 	{
 		if (str)
 			return _vsnprintf_s (str, size, _TRUNCATE, format, pa);
@@ -103,8 +103,8 @@
 			return _vscprintf (format, pa);
 	}
 
-	#define snprintf  __priv_snprintf
-	#define vsnprintf __priv_vsnprintf
+	#define snprintf  priv_snprintf
+	#define vsnprintf priv_vsnprintf
 	#define HAVE_SNPRINTF
 #endif /* ! HAVE_SPRINTF && HAVE__SNPRINTF_S */
 
@@ -179,45 +179,9 @@
 		#define ftruncate(fd, size) (_chsize_s ((fd), (size)) ? -1 : 0)
 	#elif defined (HAVE__CHSIZE)
 		#include <io.h>
-		#define ftruncate(fd, size) _chsize ((fd), (size))
+		#define ftruncate(fd, size)  _chsize   ((fd), (size))
 	#endif /* ! HAVE__CHSIZE */
 #endif /* ! HAVE_FTRUNCATE */
-
-#ifndef HAVE__MKGMTIME
-	#ifdef HAVE_SETENV
-		#define __PRIV_SETENV(key, value)  setenv   ((key),  (value), 1)
-	#elif defined (HAVE__PUTENV_S)
-		#define __PRIV_SETENV(key, value) _putenv_s ((key),  (value))
-	#elif defined (HAVE__PUTENV)
-		#define __PRIV_SETENV(key, value) _putenv    (key "=" value)
-	#elif defined (HAVE_PUTENV)
-		#define __PRIV_SETENV(key, value)  putenv    (key "=" value)
-	#else
-		#error Neither setenv() nor putenv() is present.
-	#endif
-
-	#ifdef HAVE__TZSET
-		#define tzset _tzset
-	#elif !defined (HAVE_TZSET)
-		#error tzset() not present.
-	#endif
-
-	#include <time.h>
-
-	/* On Windows, putenv() will remove the env. variable when an empty
-	 * value is assigned to it. In that case, tzset() might use the system
-	 * settings. The solution is setting the timezone to UTC explicitly.
-	 * Note that GMT is used because it should be supported more broadly.
-	 */
-	static inline void
-	setutctimezone (void)
-	{
-		__PRIV_SETENV("TZ", "GMT0");
-		tzset();
-	}
-
-	#undef __PRIV_SETENV
-#endif /* ! HAVE__MKGMTIME */
 
 
 #endif /* ! __CONFIG_H__ */

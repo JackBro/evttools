@@ -26,6 +26,41 @@
 #include "datastruct.h"
 
 
+#ifndef HAVE__MKGMTIME
+	#ifdef HAVE_SETENV
+		#define PRIV_SETENV(key, value)  setenv   ((key),  (value), 1)
+	#elif defined (HAVE__PUTENV_S)
+		#define PRIV_SETENV(key, value) _putenv_s ((key),  (value))
+	#elif defined (HAVE__PUTENV)
+		#define PRIV_SETENV(key, value) _putenv    (key "=" value)
+	#elif defined (HAVE_PUTENV)
+		#define PRIV_SETENV(key, value)  putenv    (key "=" value)
+	#else
+		#error Neither setenv() nor putenv() is present.
+	#endif
+
+	#ifdef HAVE__TZSET
+		#define tzset _tzset
+	#elif !defined (HAVE_TZSET)
+		#error tzset() not present.
+	#endif
+
+	/* On Windows, putenv() will remove the env. variable when an empty
+	 * value is assigned to it. In that case, tzset() might use the system
+	 * settings. The solution is setting the timezone to UTC explicitly.
+	 * Note that GMT is used because it should be supported more broadly.
+	 */
+	static inline void
+	setutctimezone (void)
+	{
+		PRIV_SETENV("TZ", "GMT0");
+		tzset();
+	}
+
+	#undef PRIV_SETENV
+#endif /* ! HAVE__MKGMTIME */
+
+
 #define CSV2EVT_RENUMBER     (1 << 0)  /**< Renumber log records. */
 #define CSV2EVT_APPEND       (1 << 1)  /**< Append to the log. */
 #define CSV2EVT_NOOVERWRITE  (1 << 2)  /**< Prevent log overwriting. */
@@ -359,8 +394,9 @@ processField_error:
 static int
 processRecord (ConvCtx *ctx)
 {
-	int error, ret = FALSE;
 	EvtEncodeError encErrors;
+	EvtError error;
+	int ret = FALSE;
 
 	if (evtEncodeRecordData (&ctx->recContents, &ctx->rec, &encErrors))
 	{
@@ -425,7 +461,7 @@ processFile (const char *restrict inpath, const char *restrict outpath,
 	FILE *out, *in;
 	ConvCtx ctx;
 	CsvReader reader;
-	int inputEOF = 0;
+	int inputEOF = FALSE;
 	EvtLog *log;
 	uint32_t fileSize;
 	FileIO *outIO;
@@ -512,7 +548,7 @@ processFile (const char *restrict inpath, const char *restrict outpath,
 			evtDestroyRecordContents (&ctx.recContents);
 			break;
 		case CSV_EOF:
-			inputEOF = 1;
+			inputEOF = TRUE;
 			break;
 		case CSV_ERROR:
 			fputs (_("Error: Error reading the input file."), stderr);
@@ -576,7 +612,7 @@ main (int argc, char *argv[])
 
 	name = argv[0];
 	options = 0;
-	while ((opt = getopt (argc, argv, "rawh")) != -1)
+	while ((opt = getopt (argc, argv, "wrah")) != -1)
 	{
 		switch (opt)
 		{

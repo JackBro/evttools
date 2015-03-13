@@ -66,16 +66,31 @@ HAVE__MKGMTIME)
 # Localization
 find_package (Gettext)
 if (GETTEXT_FOUND)
-	set (HAVE_GETTEXT true)
 	file (GLOB project_TRANSLATIONS ${PROJECT_SOURCE_DIR}/po/*.po)
 	GETTEXT_CREATE_TRANSLATIONS (
 		${PROJECT_SOURCE_DIR}/po/${CMAKE_PROJECT_NAME}.pot
 		ALL ${project_TRANSLATIONS})
 endif (GETTEXT_FOUND)
 
-# Dependencies
-find_package (LibXtnd)
+# libintl
+find_package (LibIntl)
+if (LIBINTL_FOUND)
+	list (APPEND project_libraries ${LIBINTL_LIBRARIES})
+endif (LIBINTL_FOUND)
+
+set (CMAKE_REQUIRED_LIBRARIES ${project_libraries})
+
+CHECK_FUNCTION_EXISTS ("gettext" HAVE_GETTEXT)
+CHECK_INCLUDE_FILE ("libintl.h" HAVE_LIBINTL_H)
+
+if (GETTEXT_FOUND AND HAVE_GETTEXT AND HAVE_LIBINTL_H)
+	set (HAVE_GETTEXT true)
+endif (GETTEXT_FOUND AND HAVE_GETTEXT AND HAVE_LIBINTL_H)
+
+# libxtnd
+find_package (LibXtnd REQUIRED)
 include_directories (${XTND_INCLUDE_DIRS})
+list (APPEND project_libraries ${XTND_LIBRARIES})
 
 # Generate a configure file
 configure_file (${PROJECT_SOURCE_DIR}/config.h.in
@@ -130,7 +145,7 @@ set (project_common_headers
 # Make a library so that the above isn't compiled three times
 add_library (${CMAKE_PROJECT_NAME}-common STATIC
 	${project_common_sources} ${project_common_headers})
-set (project_libraries ${XTND_LIBRARIES} ${CMAKE_PROJECT_NAME}-common)
+list (APPEND project_libraries ${CMAKE_PROJECT_NAME}-common)
 
 # Build executables
 add_executable (evt2csv src/evt2csv.c ${project_common_headers})

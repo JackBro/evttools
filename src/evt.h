@@ -211,7 +211,7 @@ typedef struct
 	time_t timeWritten;
 
 	/** The number of strings. */
-	int numStrings;
+	unsigned numStrings;
 	/** The strings in UTF-8. */
 	char **strings;
 	/** User security identifier. */

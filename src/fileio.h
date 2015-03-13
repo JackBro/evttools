@@ -52,7 +52,7 @@ typedef int (*FileIOSeek) (void *handle, off_t offset, int whence);
 /** Get the length of the file.
  *  @param[in] handle  A handle for the file object.
  */
-typedef int64_t (*FileIOLength) (void *handle);
+typedef off_t (*FileIOLength) (void *handle);
 
 #define FILE_IO_LENGTH(h) \
 	((h)->length ((h)->handle))
@@ -62,7 +62,7 @@ typedef int64_t (*FileIOLength) (void *handle);
  *  @param[in] handle  A handle for the file object.
  *  @param[in] length  The new length.
  */
-typedef int (*FileIOTruncate) (void *handle, int64_t length);
+typedef int (*FileIOTruncate) (void *handle, off_t length);
 
 #define FILE_IO_TRUNCATE(h, length) \
 	((h)->truncate ((h)->handle, (length)))
@@ -71,7 +71,7 @@ typedef int (*FileIOTruncate) (void *handle, int64_t length);
 /** IO functions. */
 typedef struct
 {
-	void *handle;             /** A pointer to be passed to IO functions. */
+	void *handle;             /**< A pointer to be passed to IO functions. */
 
 	FileIORead     read;      /**< Read some data, advance the position. */
 	FileIOWrite    write;     /**< Write some data, advance the position. */
